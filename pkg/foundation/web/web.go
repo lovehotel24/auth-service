@@ -2,7 +2,6 @@ package web
 
 import (
 	"context"
-	"fmt"
 	"net/http"
 	"os"
 	"syscall"
@@ -93,6 +92,5 @@ func (a *App) Handle(method string, group string, path string, handler Handler, 
 	if group != "" {
 		finalPath = "/" + group + path
 	}
-	fmt.Println("final path -> ", finalPath)
 	a.mux.Handle(method, finalPath, h)
 }

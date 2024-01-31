@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/go-session/session"
+	oauth "golang.org/x/oauth2"
 
 	"github.com/lovehotel24/auth-service/pkg/foundation/validate"
 	"github.com/lovehotel24/auth-service/pkg/foundation/web"
@@ -219,4 +220,37 @@ func (h Handlers) PasswordAuthorizeHandler(ctx context.Context, clientID, phone,
 	}
 
 	return userID, nil
+}
+
+const (
+	authServerURL = "http://localhost:8081"
+)
+
+var (
+	config = oauth.Config{
+		ClientID:     "222222",
+		ClientSecret: "22222222",
+		Scopes:       []string{"all"},
+		RedirectURL:  "http://localhost:8080/v1/oauth/oauth2",
+		Endpoint: oauth.Endpoint{
+			AuthURL:  authServerURL + "/v1/oauth/authorize",
+			TokenURL: "http://localhost:8081/v1/oauth/token",
+		},
+	}
+	globalToken *oauth.Token // Non-concurrent security
+)
+
+func (h Handlers) PWD(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
+	fmt.Println("I'm PWD ", r.RequestURI)
+
+	token, err := config.PasswordCredentialsToken(context.Background(), "0634349640", "aeiou1234")
+	fmt.Println("I'm token ", token)
+	fmt.Println("token error:", err)
+	if err != nil {
+		return validate.NewRequestError(err, http.StatusInternalServerError)
+	}
+
+	globalToken = token
+
+	return web.Respond(ctx, w, token, http.StatusOK)
 }

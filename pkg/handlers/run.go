@@ -10,10 +10,11 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-oauth2/oauth2/v4/errors"
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 
-	"github.com/lovehotel24/auth-service/pkg/auth/oauth2"
+	"github.com/lovehotel24/auth-service/pkg/foundation/validate"
 	"github.com/lovehotel24/auth-service/pkg/model/user"
 	"github.com/lovehotel24/auth-service/pkg/sys/database"
 )
@@ -65,15 +66,14 @@ func Run(log *zap.SugaredLogger) error {
 	// Use a buffered channel because the signal package requires it.
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-	userStore := user.NewStore(log, db)
-	oas := oauth2.NewOauthServer(userStore)
+	//userStore := user.NewStore(log, db)
+	//oas := oauth2.NewOauthServer()
 
 	// Constructs the mux for the API calls.
 	apiMux := APIMux(APIMuxConfig{
 		Shutdown: shutdown,
 		Log:      log,
 		DB:       db,
-		OAS:      oas,
 	})
 
 	// Construct a server to service the requests against the mux.
@@ -120,4 +120,26 @@ func Run(log *zap.SugaredLogger) error {
 	}
 
 	return nil
+}
+
+func PasswordAuthorizationHandler(store user.Store) func(context.Context, string, string, string) (string, error) {
+	return func(ctx context.Context, clientID, phone, password string) (string, error) {
+		now := time.Now()
+
+		if clientID == "222222" {
+			userID, err := store.Authenticate(ctx, now, phone, password)
+			if err != nil {
+				switch validate.Cause(err) {
+				case database.ErrNotFound:
+					return "", validate.NewRequestError(err, http.StatusNotFound)
+				case database.ErrAuthenticationFailure:
+					return "", validate.NewRequestError(err, http.StatusUnauthorized)
+				default:
+					return "", fmt.Errorf("authenticating: %w", err)
+				}
+			}
+			return userID, nil
+		}
+		return "", errors.ErrUnauthorizedClient
+	}
 }
