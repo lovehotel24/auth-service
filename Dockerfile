@@ -11,11 +11,10 @@ RUN go build -ldflags "-X main.build=${BUILD_REF}"
 FROM alpine:3.19
 ARG BUILD_DATE
 ARG BUILD_REF
-RUN addgroup -g 1000 -S web && \
-    adduser -u 1000 -h /auth-service -G web -S web \
-COPY --from=build_auth-service --chown=web:web /auth-service/auth-service /service/auth-service
+
+COPY --from=build_auth-service /auth-service /service/auth-service/auth-service
+RUN ls -R /service/
 WORKDIR /service
-USER web
 CMD ["./auth-service"]
 EXPOSE 8080
 

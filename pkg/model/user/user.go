@@ -29,9 +29,8 @@ func NewStore(log *zap.SugaredLogger, db *sqlx.DB) Store {
 }
 
 // Authenticate finds a user by their phone and verifies their password. On
-// success, it returns a Claims User representing this user. The claims can be
-// used to generate a token for future authentication.
-func (s Store) Authenticate(ctx context.Context, now time.Time, phone, password string) (auth.Claims, error) {
+// success, it returns a UserId representing this user.
+func (s Store) Authenticate(ctx context.Context, now time.Time, phone, password string) (string, error) {
 	data := struct {
 		Phone string `db:"phone"`
 	}{
@@ -48,29 +47,29 @@ func (s Store) Authenticate(ctx context.Context, now time.Time, phone, password 
 
 	var dbUsr dbUser
 	if err := database.NamedQueryStruct(ctx, s.log, s.db, q, data, &dbUsr); err != nil {
-		if errors.Is(err, database.ErrNotFound) {
-			return auth.Claims{}, database.ErrNotFound
+		if err == database.ErrNotFound {
+			return "", database.ErrNotFound
 		}
-		return auth.Claims{}, fmt.Errorf("selecting user[%q]: %w", phone, err)
+		return "", fmt.Errorf("selecting user[%q]: %w", phone, err)
 	}
 
 	if err := bcrypt.CompareHashAndPassword(dbUsr.PasswordHash, []byte(password)); err != nil {
-		return auth.Claims{}, database.ErrAuthenticationFailure
+		return "", database.ErrAuthenticationFailure
 	}
 
 	// If we are this far the request is valid. Create some claims for the user
 	// and generate their token.
-	claims := auth.Claims{
-		RegisteredClaims: jwt.RegisteredClaims{
-			Issuer:    "service project",
-			Subject:   dbUsr.ID,
-			ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(time.Hour)},
-			IssuedAt:  &jwt.NumericDate{Time: time.Now().UTC()},
-		},
-		Role: dbUsr.Role,
-	}
+	//claims := auth.Claims{
+	//	RegisteredClaims: jwt.RegisteredClaims{
+	//		Issuer:    "service project",
+	//		Subject:   dbUsr.ID,
+	//		ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(time.Hour)},
+	//		IssuedAt:  &jwt.NumericDate{Time: time.Now().UTC()},
+	//	},
+	//	Role: dbUsr.Role,
+	//}
 
-	return claims, nil
+	return dbUsr.ID, nil
 }
 
 // Query retrieves a list of existing users from database.
@@ -104,15 +103,15 @@ func (s Store) Query(ctx context.Context, pageNumber int, rowsPerPage int) ([]Us
 }
 
 // QueryByID gets the specified user from the database by ID.
-func (s Store) QueryByID(ctx context.Context, claims auth.Claims, userID string) (User, error) {
+func (s Store) QueryByID(ctx context.Context, userID string) (User, error) {
 	if err := validate.CheckID(userID); err != nil {
 		return User{}, database.ErrInvalidID
 	}
 
 	// If you are not an admin and looking to delete someone other than yourself.
-	if !claims.Authorized(auth.RoleAdmin) && claims.Subject != userID {
-		return User{}, database.ErrForbidden
-	}
+	//if !claims.Authorized(auth.RoleAdmin) && claims.Subject != userID {
+	//	return User{}, database.ErrForbidden
+	//}
 
 	data := struct {
 		UserID string `db:"user_id"`
@@ -130,17 +129,21 @@ func (s Store) QueryByID(ctx context.Context, claims auth.Claims, userID string)
 
 	var dbUsr dbUser
 	if err := database.NamedQueryStruct(ctx, s.log, s.db, q, data, &dbUsr); err != nil {
-		if err == database.ErrNotFound {
+		if errors.Is(err, database.ErrNotFound) {
 			return User{}, database.ErrNotFound
 		}
 		return User{}, fmt.Errorf("selecting userID[%s]: %w", userID, err)
 	}
 
+	//if dbUsr.Role != "ADMIN" {
+	//	return User{}, database.ErrForbidden
+	//}
+
 	return toUser(dbUsr), nil
 }
 
 // QueryByPhone gets the specified user from database by phone number.
-func (s Store) QueryByPhone(ctx context.Context, claims auth.Claims, phone string) (User, error) {
+func (s Store) QueryByPhone(ctx context.Context, phone string) (User, error) {
 
 	data := struct {
 		Phone string `db:"phone"`
@@ -164,10 +167,9 @@ func (s Store) QueryByPhone(ctx context.Context, claims auth.Claims, phone strin
 		return User{}, fmt.Errorf("selecting phone[%q]: %w", phone, err)
 	}
 
-	// If you are not an admin and looking to retrieve someone other than yourself.
-	if !claims.Authorized(auth.RoleAdmin) && claims.Subject != dbUsr.ID {
-		return User{}, database.ErrForbidden
-	}
+	//if dbUsr.Role != "ADMIN" {
+	//	return User{}, database.ErrForbidden
+	//}
 
 	return toUser(dbUsr), nil
 }
@@ -207,7 +209,7 @@ func (s Store) Create(ctx context.Context, nu NewUser, now time.Time) (User, err
 }
 
 // Update replaces a user document in the database.
-func (s Store) Update(ctx context.Context, claims auth.Claims, userID string, uu UpdateUser, now time.Time) error {
+func (s Store) Update(ctx context.Context, userID string, uu UpdateUser, now time.Time) error {
 	if err := validate.CheckID(userID); err != nil {
 		return database.ErrInvalidID
 	}
@@ -216,7 +218,7 @@ func (s Store) Update(ctx context.Context, claims auth.Claims, userID string, uu
 		return fmt.Errorf("validating data: %w", err)
 	}
 
-	usr, err := s.QueryByID(ctx, claims, userID)
+	usr, err := s.QueryByID(ctx, userID)
 	if err != nil {
 		return fmt.Errorf("updating user UserID[%s]: %w", userID, err)
 	}
@@ -257,5 +259,35 @@ func (s Store) Update(ctx context.Context, claims auth.Claims, userID string, uu
 	if err := database.NamedExecContext(ctx, s.log, s.db, q, toDBUser(usr)); err != nil {
 		return fmt.Errorf("updating userID[%s]: %w", userID, err)
 	}
+	return nil
+}
+
+// Delete removes a user from the database.
+func (s Store) Delete(ctx context.Context, userID string) error {
+	if err := validate.CheckID(userID); err != nil {
+		return database.ErrInvalidID
+	}
+
+	// If you are not an admin and looking to delete someone other than yourself.
+	//if !claims.Authorized(auth.RoleAdmin) && claims.Subject != userID {
+	//	return database.ErrForbidden
+	//}
+
+	data := struct {
+		UserID string `db:"user_id"`
+	}{
+		UserID: userID,
+	}
+
+	const q = `
+	DELETE FROM
+		users
+	WHERE 
+	    user_id = :user_id`
+
+	if err := database.NamedExecContext(ctx, s.log, s.db, q, data); err != nil {
+		return fmt.Errorf("deleting userID[%s]: %w", userID, err)
+	}
+
 	return nil
 }

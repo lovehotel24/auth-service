@@ -37,3 +37,11 @@ func Respond(ctx context.Context, w http.ResponseWriter, data interface{}, statu
 
 	return nil
 }
+
+// Redirect converts a Go value to JSON and sends it to the client.
+func Redirect(w http.ResponseWriter, r *http.Request, url string, statusCode int) error {
+
+	http.Redirect(w, r, url, statusCode)
+
+	return nil
+}

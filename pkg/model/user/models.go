@@ -31,7 +31,7 @@ type User struct {
 // NewUser contains information needed to create a new User.
 type NewUser struct {
 	Name            string `json:"name" validate:"required"`
-	Phone           string `json:"phone" validate:"required,email"`
+	Phone           string `json:"phone" validate:"required"`
 	Role            string `json:"role" validate:"required"`
 	Password        string `json:"password" validate:"required"`
 	PasswordConfirm string `json:"password_confirm" validate:"eqfield=Password"`
@@ -41,7 +41,7 @@ type NewUser struct {
 // User.
 type UpdateUser struct {
 	Name            *string `json:"name"`
-	Phone           *string `json:"phone" validate:"omitempty,email"`
+	Phone           *string `json:"phone" validate:"omitempty,phone"`
 	Role            *string `json:"role"`
 	Password        *string `json:"password"`
 	PasswordConfirm *string `json:"password_confirm" validate:"omitempty,eqfield=Password"`

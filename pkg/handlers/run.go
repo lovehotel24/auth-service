@@ -12,6 +12,10 @@ import (
 
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
+
+	"github.com/lovehotel24/auth-service/pkg/auth/oauth2"
+	"github.com/lovehotel24/auth-service/pkg/model/user"
+	"github.com/lovehotel24/auth-service/pkg/sys/database"
 )
 
 var build = "develop"
@@ -20,7 +24,31 @@ func Run(log *zap.SugaredLogger) error {
 	if _, err := maxprocs.Set(); err != nil {
 		return fmt.Errorf("maxprocs: %w", err)
 	}
+
 	log.Infow("startup", "GOMAXPROCS", runtime.GOMAXPROCS(0))
+	// =================================================================================================================
+	// Database Support
+
+	// Create connectivity to the database.
+	log.Infow("startup", "status", "initializing database support", "host", "cfg.DB.Host")
+
+	db, err := database.Open(database.Config{
+		User:         "postgres",
+		Password:     "postgres",
+		Host:         "localhost",
+		Name:         "users",
+		MaxIdleConns: 0,
+		MaxOpenConns: 0,
+		DisableTLS:   true,
+	})
+	if err != nil {
+		return fmt.Errorf("connecting to db: %w", err)
+	}
+
+	defer func() {
+		log.Infow("shutdown", "status", "stopping database support", "host", "localhost")
+		db.Close()
+	}()
 
 	// =================================================================================================================
 	// App Starting
@@ -37,11 +65,15 @@ func Run(log *zap.SugaredLogger) error {
 	// Use a buffered channel because the signal package requires it.
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
+	userStore := user.NewStore(log, db)
+	oas := oauth2.NewOauthServer(userStore)
 
 	// Constructs the mux for the API calls.
 	apiMux := APIMux(APIMuxConfig{
 		Shutdown: shutdown,
 		Log:      log,
+		DB:       db,
+		OAS:      oas,
 	})
 
 	// Construct a server to service the requests against the mux.

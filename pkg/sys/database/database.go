@@ -174,9 +174,9 @@ func NamedQueryStruct(ctx context.Context, log *zap.SugaredLogger, db *sqlx.DB, 
 	q := queryString(query, data)
 	log.Infow("database.NamedQueryStruct", "trace_id", web.GetTraceID(ctx), "query", q)
 
-	ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "database.query")
-	span.SetAttributes(attribute.String("query", q))
-	defer span.End()
+	//ctx, span := otel.GetTracerProvider().Tracer("").Start(ctx, "database.query")
+	//span.SetAttributes(attribute.String("query", q))
+	//defer span.End()
 
 	rows, err := db.NamedQueryContext(ctx, query, data)
 	if err != nil {
