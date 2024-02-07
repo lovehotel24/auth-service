@@ -7,7 +7,9 @@ import (
 	"github.com/jmoiron/sqlx"
 	"go.uber.org/zap"
 
+	"github.com/lovehotel24/auth-service/pkg/auth/oauth2"
 	"github.com/lovehotel24/auth-service/pkg/foundation/web"
+	"github.com/lovehotel24/auth-service/pkg/handlers/v1/oauth"
 	"github.com/lovehotel24/auth-service/pkg/handlers/v1/testgrp"
 	"github.com/lovehotel24/auth-service/pkg/handlers/v1/usergrp"
 	"github.com/lovehotel24/auth-service/pkg/model/user"
@@ -19,6 +21,7 @@ type APIMuxConfig struct {
 	Shutdown chan os.Signal
 	Log      *zap.SugaredLogger
 	DB       *sqlx.DB
+	OAS      *oauth2.OAuthServer
 }
 
 func APIMux(cfg APIMuxConfig) *web.App {
@@ -57,13 +60,15 @@ func v1(app *web.App, cfg APIMuxConfig) {
 	app.Handle(http.MethodPost, version, "/users/login", ugh.Login)
 	app.Handle(http.MethodGet, version, "/users/pwd", ugh.PWD)
 
-	//ogh := oauth.Handlers{
-	//	Oauth2: cfg.OAS,
-	//}
+	ogh := oauth.Handlers{
+		Oauth2: cfg.OAS,
+		Log:    cfg.Log,
+	}
 
 	//app.Handle(http.MethodGet, version, "/oauth/authorize", ogh.Authorize)
-	//app.Handle(http.MethodGet, version, "/oauth/token", ogh.Token)
-	//app.Handle(http.MethodGet, version, "/oauth/test", ogh.Test)
+
+	app.Handle(http.MethodGet, version, "/oauth/token", ogh.Token)
+	app.Handle(http.MethodGet, version, "/oauth/test", ogh.Test)
 
 	//app.Handle(http.MethodGet, version, "/", ogh.Index)
 	//app.Handle(http.MethodGet, version, "/oauth/oauth2", ogh.OAuth2)

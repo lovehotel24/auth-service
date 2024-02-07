@@ -1,4 +1,4 @@
-package main
+package oauth
 
 import (
 	"context"
@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/go-oauth2/oauth2/v4/errors"
+	"go.uber.org/zap"
 
 	"github.com/lovehotel24/auth-service/pkg/auth/oauth2"
 	"github.com/lovehotel24/auth-service/pkg/foundation/validate"
@@ -17,22 +18,25 @@ import (
 
 type Handlers struct {
 	Oauth2 *oauth2.OAuthServer
+	Log    *zap.SugaredLogger
 }
 
-func (h Handlers) Token(w http.ResponseWriter, r *http.Request) {
+func (h Handlers) Token(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
 	err := h.Oauth2.Srv.HandleTokenRequest(w, r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 	}
+
+	return err
 }
 
-func (h Handlers) Test(w http.ResponseWriter, r *http.Request) {
+func (h Handlers) Test(ctx context.Context, w http.ResponseWriter, r *http.Request) error {
 
 	token, err := h.Oauth2.Srv.ValidationBearerToken(r)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusBadRequest)
-		return
+		return err
 	}
 
 	data := map[string]interface{}{
@@ -44,6 +48,8 @@ func (h Handlers) Test(w http.ResponseWriter, r *http.Request) {
 	e := json.NewEncoder(w)
 	e.SetIndent("", "  ")
 	e.Encode(data)
+
+	return nil
 }
 
 //func main() {

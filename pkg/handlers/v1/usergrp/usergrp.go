@@ -223,7 +223,7 @@ func (h Handlers) PasswordAuthorizeHandler(ctx context.Context, clientID, phone,
 }
 
 const (
-	authServerURL = "http://localhost:8081"
+	authServerURL = "http://localhost:8080"
 )
 
 var (
@@ -234,7 +234,7 @@ var (
 		RedirectURL:  "http://localhost:8080/v1/oauth/oauth2",
 		Endpoint: oauth.Endpoint{
 			AuthURL:  authServerURL + "/v1/oauth/authorize",
-			TokenURL: "http://localhost:8081/v1/oauth/token",
+			TokenURL: "http://localhost:8080/v1/oauth/token",
 		},
 	}
 	globalToken *oauth.Token // Non-concurrent security

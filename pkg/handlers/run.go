@@ -14,6 +14,7 @@ import (
 	"go.uber.org/automaxprocs/maxprocs"
 	"go.uber.org/zap"
 
+	"github.com/lovehotel24/auth-service/pkg/auth/oauth2"
 	"github.com/lovehotel24/auth-service/pkg/foundation/validate"
 	"github.com/lovehotel24/auth-service/pkg/model/user"
 	"github.com/lovehotel24/auth-service/pkg/sys/database"
@@ -66,14 +67,16 @@ func Run(log *zap.SugaredLogger) error {
 	// Use a buffered channel because the signal package requires it.
 	shutdown := make(chan os.Signal, 1)
 	signal.Notify(shutdown, syscall.SIGINT, syscall.SIGTERM)
-	//userStore := user.NewStore(log, db)
-	//oas := oauth2.NewOauthServer()
+	userStore := user.NewStore(log, db)
+	oas := oauth2.NewOauthServer()
+	oas.SetPasswordAuthorizationHandler(PasswordAuthorizationHandler(userStore))
 
 	// Constructs the mux for the API calls.
 	apiMux := APIMux(APIMuxConfig{
 		Shutdown: shutdown,
 		Log:      log,
 		DB:       db,
+		OAS:      oas,
 	})
 
 	// Construct a server to service the requests against the mux.

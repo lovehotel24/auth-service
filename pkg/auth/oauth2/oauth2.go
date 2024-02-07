@@ -20,7 +20,7 @@ func NewOauthServer() *OAuthServer {
 	clientStore.Set("222222", &models.Client{
 		ID:     "222222",
 		Secret: "22222222",
-		Domain: "http://localhost:8081",
+		Domain: "http://localhost:8080",
 	})
 
 	manager := manage.NewDefaultManager()
