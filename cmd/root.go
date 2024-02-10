@@ -1,13 +1,11 @@
 package cmd
 
 import (
-	"fmt"
 	"os"
 
 	"github.com/spf13/cobra"
 
-	"github.com/lovehotel24/auth-service/pkg/foundation/logger"
-	"github.com/lovehotel24/auth-service/pkg/handlers"
+	"github.com/lovehotel24/auth-service/pkg"
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -42,18 +40,5 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
-	// Construct the application logger.
-	log, err := logger.New("AUTH")
-	if err != nil {
-		fmt.Println(err)
-		os.Exit(1)
-	}
-	defer log.Sync()
-
-	// Perform the startup and shutdown sequence.
-	if err := handlers.Run(log); err != nil {
-		log.Errorw("startup", "ERROR", err)
-		log.Sync()
-		os.Exit(1)
-	}
+	pkg.Run()
 }

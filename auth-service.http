@@ -1,0 +1,46 @@
+### get all users
+GET http://localhost:8080/
+Accept: application/json
+
+### create user
+POST http://localhost:8080/
+Content-Type: application/json
+
+{
+  "name": "dther",
+  "phone": "0634349640",
+  "role": "user",
+  "password": "aeiou1234"
+}
+
+### update user
+
+PUT http://localhost:8080/cf1e733c-c6f1-11ee-8cdd-4a29f78ba46f
+Content-Type: application/json
+
+{
+  "name": "dther",
+  "phone": "0634349640",
+  "role": "user",
+  "password": "heeheehaha"
+}
+
+
+### delete user
+
+DELETE http://localhost:8080/cf1e733c-c6f1-11ee-8cdd-4a29f78ba46f
+
+
+### login
+
+POST http://localhost:8080/login
+Content-Type: application/json
+
+{
+  "phone": "0634349640",
+  "password": "aeiou1234"
+}
+
+### access_token
+
+GET http://localhost:8080/oauth/validate_token?access_token=eyJhbGciOiJIUzUxMiIsImtpZCI6Imp3dCIsInR5cCI6IkpXVCJ9.eyJhdWQiOiIyMjIyMjIiLCJleHAiOjE3MDc1NjA0NzAsInN1YiI6IjQ5ZjJiNDhjLWM3ZWQtMTFlZS1hZWQyLTRhMjlmNzhiYTQ2ZiJ9.mxcJKdAscZ45rZhTQHEOBew-b8foAL1bnzZbAc0wCH4ikzScTiKEp5KbvgLR8wCRgrN63lOkF03ccmNwcrPolQ
