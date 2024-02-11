@@ -11,7 +11,8 @@ import (
 func Run() {
 	router := gin.New()
 	configs.Connect()
-	oauthSvr := controller.NewOauth2(configs.DB)
+	tokenStore := configs.NewTokenStore()
+	oauthSvr := controller.NewOauth2(configs.DB, tokenStore)
 	//oauthSvr.SetPasswordAuthorizationHandler(controller.PasswordAuthorizationHandler(configs.DB))
 	router.Use(gin.Logger())
 	routers.UserRouter(router, oauthSvr)

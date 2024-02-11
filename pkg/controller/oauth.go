@@ -11,11 +11,10 @@ import (
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
 	oredis "github.com/go-oauth2/redis/v4"
-	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
-func NewOauth2(db *gorm.DB) *server.Server {
+func NewOauth2(db *gorm.DB, ts *oredis.TokenStore) *server.Server {
 
 	clientStore := store.NewClientStore()
 	clientStore.Set("222222", &models.Client{
@@ -36,11 +35,7 @@ func NewOauth2(db *gorm.DB) *server.Server {
 	manager.SetPasswordTokenCfg(cfg)
 
 	// token store
-	manager.MapTokenStorage(oredis.NewRedisStore(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		DB:       15,
-		Password: "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81",
-	}))
+	manager.MapTokenStorage(ts)
 	//manager.MapAccessGenerate(generates.NewJWTAccessGenerate("jwt", []byte("pibigstar"), jwt.SigningMethodHS512))
 	manager.MapAccessGenerate(generates.NewAccessGenerate())
 	manager.MapClientStorage(clientStore)

@@ -1,8 +1,6 @@
 package configs
 
 import (
-	"fmt"
-
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -19,8 +17,7 @@ func Connect() {
 	db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 	err = db.AutoMigrate(&models.User{})
 	if err != nil {
-		fmt.Println(err)
-		return
+		panic(err)
 	}
 	DB = db
 }

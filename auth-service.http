@@ -18,10 +18,10 @@ POST http://localhost:8080/v1/register
 Content-Type: application/json
 
 {
-  "name": "dther",
-  "phone": "0634349640",
-  "role": "user",
-  "password": "aeiou1234"
+  "name": "zinzin",
+  "phone": "0634349645",
+  "role": "admin",
+  "password": "asdf"
 }
 
 ### update user
