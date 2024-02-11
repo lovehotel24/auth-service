@@ -11,14 +11,15 @@ import (
 )
 
 func OauthRouter(router *gin.Engine, srv *server.Server) {
-	router.POST("/oauth/token", func(c *gin.Context) {
+	oauthRoute := router.Group("/oauth")
+	oauthRoute.POST("/token", func(c *gin.Context) {
 		err := srv.HandleTokenRequest(c.Writer, c.Request)
 		if err != nil {
 			return
 		}
 	})
 
-	router.GET("/oauth/validate_token", func(c *gin.Context) {
+	oauthRoute.GET("/validate_token", func(c *gin.Context) {
 		if token, err := srv.ValidationBearerToken(c.Request); err != nil {
 			res := gin.H{"err_desc": err.Error()}
 			switch {

@@ -14,7 +14,7 @@ func Run() {
 	oauthSvr := controller.NewOauth2(configs.DB)
 	//oauthSvr.SetPasswordAuthorizationHandler(controller.PasswordAuthorizationHandler(configs.DB))
 	router.Use(gin.Logger())
-	routers.UserRouter(router)
+	routers.UserRouter(router, oauthSvr)
 	routers.OauthRouter(router, oauthSvr)
 	err := router.Run(":8080")
 	if err != nil {

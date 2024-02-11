@@ -13,7 +13,20 @@ import (
 func GetUsers(c *gin.Context) {
 	var users []models.User
 	configs.DB.Find(&users)
-	c.JSON(200, &users)
+	c.JSON(http.StatusOK, &users)
+}
+
+func CurrentUser(c *gin.Context) {
+	var user models.User
+	userID, _ := c.Get("userID")
+	configs.DB.Where("id = ?", userID).First(&user)
+	c.JSON(http.StatusOK, &user)
+}
+
+func GetUser(c *gin.Context) {
+	var user models.User
+	configs.DB.Where("id = ?", c.Param("id")).First(&user)
+	c.JSON(http.StatusOK, &user)
 }
 
 func CreateUser(c *gin.Context) {
@@ -42,11 +55,11 @@ func UpdateUser(c *gin.Context) {
 		return
 	}
 	configs.DB.Save(&user)
-	c.JSON(200, &user)
+	c.JSON(http.StatusOK, &user)
 }
 
 func DeleteUser(c *gin.Context) {
 	var user models.User
 	configs.DB.Where("id = ?", c.Param("id")).Delete(&user)
-	c.JSON(200, &user)
+	c.JSON(http.StatusOK, &user)
 }

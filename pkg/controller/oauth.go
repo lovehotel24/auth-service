@@ -10,7 +10,8 @@ import (
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
-	"github.com/golang-jwt/jwt"
+	oredis "github.com/go-oauth2/redis/v4"
+	"github.com/go-redis/redis/v8"
 	"gorm.io/gorm"
 )
 
@@ -35,8 +36,13 @@ func NewOauth2(db *gorm.DB) *server.Server {
 	manager.SetPasswordTokenCfg(cfg)
 
 	// token store
-	manager.MustTokenStorage(store.NewMemoryTokenStore())
-	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("jwt", []byte("pibigstar"), jwt.SigningMethodHS512))
+	manager.MapTokenStorage(oredis.NewRedisStore(&redis.Options{
+		Addr:     "127.0.0.1:6379",
+		DB:       15,
+		Password: "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81",
+	}))
+	//manager.MapAccessGenerate(generates.NewJWTAccessGenerate("jwt", []byte("pibigstar"), jwt.SigningMethodHS512))
+	manager.MapAccessGenerate(generates.NewAccessGenerate())
 	manager.MapClientStorage(clientStore)
 
 	srv := server.NewServer(server.NewConfig(), manager)

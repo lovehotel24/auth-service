@@ -1,9 +1,20 @@
 ### get all users
-GET http://localhost:8080/
+GET http://localhost:8080/v1/users
 Accept: application/json
+Authorization: Bearer {{token}}
 
-### create user
-POST http://localhost:8080/
+### get single user
+GET http://localhost:8080/v1/user/4d501aca-c7ed-11ee-aed2-4a29f78ba46f
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### get current user
+GET http://localhost:8080/v1/current_user
+Accept: application/json
+Authorization: Bearer {{token}}
+
+### register user
+POST http://localhost:8080/v1/register
 Content-Type: application/json
 
 {
@@ -14,9 +25,9 @@ Content-Type: application/json
 }
 
 ### update user
-
-PUT http://localhost:8080/cf1e733c-c6f1-11ee-8cdd-4a29f78ba46f
+PUT http://localhost:8080/v1/user/cf1e733c-c6f1-11ee-8cdd-4a29f78ba46f
 Content-Type: application/json
+Authorization: Bearer {{token}}
 
 {
   "name": "dther",
@@ -27,13 +38,11 @@ Content-Type: application/json
 
 
 ### delete user
-
-DELETE http://localhost:8080/cf1e733c-c6f1-11ee-8cdd-4a29f78ba46f
-
+DELETE http://localhost:8080/v1/user/49f2b48c-c7ed-11ee-aed2-4a29f78ba46f
+Authorization: Bearer {{token}}
 
 ### login
-
-POST http://localhost:8080/login
+POST http://localhost:8080/v1/login
 Content-Type: application/json
 
 {
@@ -42,5 +51,4 @@ Content-Type: application/json
 }
 
 ### access_token
-
 GET http://localhost:8080/oauth/validate_token?access_token=eyJhbGciOiJIUzUxMiIsImtpZCI6Imp3dCIsInR5cCI6IkpXVCJ9.eyJhdWQiOiIyMjIyMjIiLCJleHAiOjE3MDc1NjA0NzAsInN1YiI6IjQ5ZjJiNDhjLWM3ZWQtMTFlZS1hZWQyLTRhMjlmNzhiYTQ2ZiJ9.mxcJKdAscZ45rZhTQHEOBew-b8foAL1bnzZbAc0wCH4ikzScTiKEp5KbvgLR8wCRgrN63lOkF03ccmNwcrPolQ
