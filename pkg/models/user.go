@@ -12,7 +12,7 @@ type User struct {
 	gorm.Model
 	Id           uuid.UUID `json:"id" gorm:"primary_key;type:uuid;default:uuid_generate_v4();"`
 	Name         string    `json:"name"`
-	Phone        string    `json:"phone" gorm:"uniqueIndex"`
+	Phone        string    `json:"phone" gorm:"<-:create;uniqueIndex"`
 	Role         string    `json:"role"`
 	Password     string    `json:"password"`
 	PasswordHash []byte    `json:"-"`

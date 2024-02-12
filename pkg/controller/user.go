@@ -67,7 +67,6 @@ func UpdateUser(c *gin.Context) {
 	var currentUser models.User
 	session := sessions.Default(c)
 	userId := session.Get(userKey)
-	fmt.Println("userID from Session of UpdateUser -> ", userId)
 	user := getUserById(userId)
 	if err := c.BindJSON(&updateUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -78,24 +77,32 @@ func UpdateUser(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID for the update operation"})
 		return
 	}
+	fmt.Println("password before -> ", user.PasswordHash)
 
-	if hash, ok := generateHashPasswd(c, updateUser.Password); ok {
-		user.PasswordHash = hash
-	} else {
-		return
+	if updateUser.Password != "" {
+		fmt.Println("update password -> ", updateUser.Password)
+		if hash, ok := generateHashPasswd(c, updateUser.Password); ok {
+			user.PasswordHash = hash
+		} else {
+			return
+		}
 	}
+
+	fmt.Println("password after -> ", user.PasswordHash)
 
 	if updateUser.Role != "" && updateUser.Role != user.Role && user.Role == "ADMIN" {
 		user.Role = updateUser.Role
 	}
-	fmt.Println(updateUser.Phone)
 
-	user.Phone = updateUser.Phone
+	if updateUser.Phone != "" {
+		user.Phone = updateUser.Phone
+	}
 
 	user.Name = updateUser.Name
 	user.Password = ""
 
-	if err := configs.DB.Save(&user); err != nil {
+	if err := configs.DB.Save(&user).Error; err != nil {
+		fmt.Println(err)
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
 		return
 	}
