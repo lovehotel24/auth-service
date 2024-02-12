@@ -4,12 +4,15 @@ import (
 	"fmt"
 	"net/http"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/lovehotel24/auth-service/pkg/configs"
 	"github.com/lovehotel24/auth-service/pkg/models"
 )
+
+const userKey = "userId"
 
 func GetUsers(c *gin.Context) {
 	var users []models.User
@@ -48,24 +51,48 @@ func CreateUser(c *gin.Context) {
 		return
 	}
 
-	hash, err := bcrypt.GenerateFromPassword([]byte(user.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	if hash, ok := generateHashPasswd(c, user.Password); ok {
+		user.PasswordHash = hash
+	} else {
 		return
 	}
-	user.PasswordHash = hash
+
 	user.Password = ""
 	configs.DB.Create(&user)
 	c.JSON(http.StatusOK, &user)
 }
 
 func UpdateUser(c *gin.Context) {
-	var user models.User
-	configs.DB.Where("id = ?", c.Param("id")).First(&user)
-	if err := c.BindJSON(&user); err != nil {
+	var updateUser models.User
+	var currentUser models.User
+	session := sessions.Default(c)
+	userId := session.Get(userKey)
+	fmt.Println("userID from Session of UpdateUser -> ", userId)
+	user := getUserById(userId)
+	if err := c.BindJSON(&updateUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
+	configs.DB.Model(models.User{}).Where("id = ?", user.Id).First(&currentUser)
+	if currentUser.Id != user.Id {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID for the update operation"})
+		return
+	}
+
+	if hash, ok := generateHashPasswd(c, updateUser.Password); ok {
+		user.PasswordHash = hash
+	} else {
+		return
+	}
+
+	if updateUser.Role != "" && updateUser.Role != user.Role && user.Role == "ADMIN" {
+		user.Role = updateUser.Role
+	}
+
+	user.Phone = updateUser.Phone
+	user.Name = updateUser.Name
+	user.Phone = ""
+
 	configs.DB.Save(&user)
 	c.JSON(http.StatusOK, &user)
 }
@@ -116,15 +143,25 @@ func ResetPass(c *gin.Context) {
 	}
 	configs.DB.Model(&models.ResetPass{}).Where("verify_code = ?", reset.Code).First(&forget)
 	configs.DB.Model(&models.User{}).Where("id = ?", forget.UserId).First(&user)
-	hash, err := bcrypt.GenerateFromPassword([]byte(reset.Password), bcrypt.DefaultCost)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+
+	if hash, ok := generateHashPasswd(c, reset.Password); ok {
+		user.PasswordHash = hash
+	} else {
 		return
 	}
-	user.PasswordHash = hash
+
 	configs.DB.Save(&user)
 	configs.DB.Model(&models.ResetPass{}).Delete(&forget)
 	c.JSON(http.StatusOK, &user)
+}
+
+func generateHashPasswd(c *gin.Context, pass string) ([]byte, bool) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
+	if err != nil {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return nil, false
+	}
+	return hash, true
 }
 
 func OnlyAdmin() gin.HandlerFunc {

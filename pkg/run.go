@@ -1,6 +1,7 @@
 package pkg
 
 import (
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 
 	"github.com/lovehotel24/auth-service/pkg/configs"
@@ -12,9 +13,10 @@ func Run() {
 	router := gin.New()
 	configs.Connect()
 	tokenStore := configs.NewTokenStore()
+	sessionStore := configs.NewSessionStore()
 	oauthSvr := controller.NewOauth2(configs.DB, tokenStore)
 	//oauthSvr.SetPasswordAuthorizationHandler(controller.PasswordAuthorizationHandler(configs.DB))
-	router.Use(gin.Logger())
+	router.Use(gin.Logger(), sessions.Sessions("my_session", sessionStore))
 	routers.UserRouter(router, oauthSvr)
 	routers.OauthRouter(router, oauthSvr)
 	err := router.Run(":8080")

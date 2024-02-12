@@ -25,14 +25,13 @@ Content-Type: application/json
 }
 
 ### update user
-PUT http://localhost:8080/v1/user/cf1e733c-c6f1-11ee-8cdd-4a29f78ba46f
+PUT http://localhost:8080/v1/user/9693013c-c97a-11ee-9947-4a29f78ba46f
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
   "name": "dther",
   "phone": "0634349640",
-  "role": "user",
   "password": "heeheehaha"
 }
 
@@ -47,7 +46,7 @@ Content-Type: application/json
 
 {
   "phone": "0634349640",
-  "password": "hell123"
+  "password": "heeheehaha"
 }
 
 ### forget pass
@@ -63,7 +62,7 @@ POST http://localhost:8080/v1/reset_pass
 Content-Type: application/json
 
 {
-  "code": "073942",
+  "code": "964757",
   "password": "hell123",
   "confirm_password": "hell123"
 }

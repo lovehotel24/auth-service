@@ -3,11 +3,14 @@ package routers
 import (
 	"net/http"
 
+	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/server"
 
 	"github.com/lovehotel24/auth-service/pkg/controller"
 )
+
+const userKey = "userId"
 
 func UserRouter(router *gin.Engine, srv *server.Server) {
 	router.Use(ValidateToken(srv))
@@ -16,7 +19,7 @@ func UserRouter(router *gin.Engine, srv *server.Server) {
 	v1UserRouter.GET("/user/:id", controller.GetUser)
 	v1UserRouter.GET("/current_user", controller.CurrentUser)
 	v1UserRouter.POST("/register", controller.CreateUser)
-	v1UserRouter.DELETE("/user/:id", controller.DeleteUser)
+	v1UserRouter.DELETE("/user/:id", controller.OnlyAdmin(), controller.DeleteUser)
 	v1UserRouter.PUT("/user/:id", controller.UpdateUser)
 	v1UserRouter.POST("/forget_pass", controller.ForgetPass)
 	v1UserRouter.POST("/reset_pass", controller.ResetPass)
@@ -35,6 +38,12 @@ func ValidateToken(srv *server.Server) gin.HandlerFunc {
 		if err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			c.Abort()
+			return
+		}
+		session := sessions.Default(c)
+		session.Set(userKey, token.GetUserID()) // In real world usage you'd set this to the users ID
+		if err := session.Save(); err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
 			return
 		}
 		c.Set("userID", token.GetUserID())
