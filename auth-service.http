@@ -31,7 +31,7 @@ Authorization: Bearer {{token}}
 
 {
   "name": "dther",
-  "phone": "0634349640",
+  "phone": "0634349642",
   "password": "heeheehaha"
 }
 
@@ -46,7 +46,7 @@ Content-Type: application/json
 
 {
   "phone": "0634349640",
-  "password": "heeheehaha"
+  "password": "hell123"
 }
 
 ### forget pass

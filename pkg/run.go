@@ -16,7 +16,7 @@ func Run() {
 	sessionStore := configs.NewSessionStore()
 	oauthSvr := controller.NewOauth2(configs.DB, tokenStore)
 	//oauthSvr.SetPasswordAuthorizationHandler(controller.PasswordAuthorizationHandler(configs.DB))
-	router.Use(gin.Logger(), sessions.Sessions("my_session", sessionStore))
+	router.Use(gin.Logger(), sessions.Sessions("session", sessionStore))
 	routers.UserRouter(router, oauthSvr)
 	routers.OauthRouter(router, oauthSvr)
 	err := router.Run(":8080")

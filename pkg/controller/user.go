@@ -88,12 +88,17 @@ func UpdateUser(c *gin.Context) {
 	if updateUser.Role != "" && updateUser.Role != user.Role && user.Role == "ADMIN" {
 		user.Role = updateUser.Role
 	}
+	fmt.Println(updateUser.Phone)
 
 	user.Phone = updateUser.Phone
-	user.Name = updateUser.Name
-	user.Phone = ""
 
-	configs.DB.Save(&user)
+	user.Name = updateUser.Name
+	user.Password = ""
+
+	if err := configs.DB.Save(&user); err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+		return
+	}
 	c.JSON(http.StatusOK, &user)
 }
 
