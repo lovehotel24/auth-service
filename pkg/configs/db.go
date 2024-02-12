@@ -19,5 +19,13 @@ func Connect() {
 	if err != nil {
 		panic(err)
 	}
+	err = db.AutoMigrate(&models.ResetPass{})
+	if err != nil {
+		panic(err)
+	}
+	admin := models.NewAdmin()
+	db.Create(&admin)
+	tester := models.NewUser()
+	db.Create(&tester)
 	DB = db
 }

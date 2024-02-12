@@ -12,19 +12,21 @@ import (
 func UserRouter(router *gin.Engine, srv *server.Server) {
 	router.Use(ValidateToken(srv))
 	v1UserRouter := router.Group("/v1")
-	v1UserRouter.GET("/users", controller.GetUsers)
+	v1UserRouter.GET("/users", controller.OnlyAdmin(), controller.GetUsers)
 	v1UserRouter.GET("/user/:id", controller.GetUser)
 	v1UserRouter.GET("/current_user", controller.CurrentUser)
 	v1UserRouter.POST("/register", controller.CreateUser)
 	v1UserRouter.DELETE("/user/:id", controller.DeleteUser)
 	v1UserRouter.PUT("/user/:id", controller.UpdateUser)
+	v1UserRouter.POST("/forget_pass", controller.ForgetPass)
+	v1UserRouter.POST("/reset_pass", controller.ResetPass)
 	v1UserRouter.POST("/login", controller.Login())
 }
 
 func ValidateToken(srv *server.Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		if c.FullPath() == "/v1/login" || c.FullPath() == "/oauth/token" || c.FullPath() == "/v1/register" {
+		if c.FullPath() == "/v1/login" || c.FullPath() == "/oauth/token" || c.FullPath() == "/v1/register" || c.FullPath() == "/v1/forget_pass" || c.FullPath() == "/v1/reset_pass" {
 			c.Next()
 			return
 		}

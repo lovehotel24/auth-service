@@ -19,8 +19,8 @@ Content-Type: application/json
 
 {
   "name": "zinzin",
-  "phone": "0634349645",
-  "role": "admin",
+  "phone": "0634349640",
+  "role": "ADMIN",
   "password": "asdf"
 }
 
@@ -47,7 +47,25 @@ Content-Type: application/json
 
 {
   "phone": "0634349640",
-  "password": "aeiou1234"
+  "password": "hell123"
+}
+
+### forget pass
+POST http://localhost:8080/v1/forget_pass
+Content-Type: application/json
+
+{
+  "phone": "0634349640"
+}
+
+### reset pass
+POST http://localhost:8080/v1/reset_pass
+Content-Type: application/json
+
+{
+  "code": "073942",
+  "password": "hell123",
+  "confirm_password": "hell123"
 }
 
 ### access_token
