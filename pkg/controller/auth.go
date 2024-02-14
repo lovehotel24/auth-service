@@ -4,9 +4,11 @@ import (
 	"context"
 	"fmt"
 	"net/http"
+	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/errors"
+	oredis "github.com/go-oauth2/redis/v4"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
@@ -68,7 +70,37 @@ func Login() gin.HandlerFunc {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
 		}
-		globalToken = token
 		c.JSON(200, token)
 	}
+}
+
+func Logout(ts *oredis.TokenStore) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		token, ok := BearerAuth(c.Request)
+		if !ok {
+			c.Redirect(http.StatusPermanentRedirect, "/")
+			return
+		}
+		err := ts.RemoveByAccess(context.Background(), token)
+		if err != nil {
+			fmt.Println(err)
+		}
+		c.JSON(http.StatusOK, gin.H{
+			"message": "User Sign out successfully",
+		})
+	}
+}
+
+func BearerAuth(r *http.Request) (string, bool) {
+	auth := r.Header.Get("Authorization")
+	prefix := "Bearer "
+	token := ""
+
+	if auth != "" && strings.HasPrefix(auth, prefix) {
+		token = auth[len(prefix):]
+	} else {
+		token = r.FormValue("access_token")
+	}
+
+	return token, token != ""
 }

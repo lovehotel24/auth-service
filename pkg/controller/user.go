@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gin-contrib/sessions"
 	"github.com/gin-gonic/gin"
 	"golang.org/x/crypto/bcrypt"
 
@@ -12,7 +11,9 @@ import (
 	"github.com/lovehotel24/auth-service/pkg/models"
 )
 
-const userKey = "userId"
+const (
+	userKey = "userId"
+)
 
 func GetUsers(c *gin.Context) {
 	var users []models.User
@@ -33,7 +34,11 @@ func getUserByPhone(phone string) models.User {
 }
 
 func CurrentUser(c *gin.Context) {
-	userID, _ := c.Get("userID")
+	userID, ok := c.Get(userKey)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to current user"})
+		return
+	}
 	user := getUserById(userID)
 	c.JSON(http.StatusOK, &user)
 }
@@ -65,8 +70,11 @@ func CreateUser(c *gin.Context) {
 func UpdateUser(c *gin.Context) {
 	var updateUser models.User
 	var currentUser models.User
-	session := sessions.Default(c)
-	userId := session.Get(userKey)
+	userId, ok := c.Get(userKey)
+	if !ok {
+		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
+		return
+	}
 	user := getUserById(userId)
 	if err := c.BindJSON(&updateUser); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
@@ -87,8 +95,6 @@ func UpdateUser(c *gin.Context) {
 			return
 		}
 	}
-
-	fmt.Println("password after -> ", user.PasswordHash)
 
 	if updateUser.Role != "" && updateUser.Role != user.Role && user.Role == "ADMIN" {
 		user.Role = updateUser.Role
@@ -167,6 +173,10 @@ func ResetPass(c *gin.Context) {
 	c.JSON(http.StatusOK, &user)
 }
 
+func Hello(c *gin.Context) {
+	c.JSON(http.StatusOK, gin.H{"hello": "world"})
+}
+
 func generateHashPasswd(c *gin.Context, pass string) ([]byte, bool) {
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
@@ -178,7 +188,7 @@ func generateHashPasswd(c *gin.Context, pass string) ([]byte, bool) {
 
 func OnlyAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userId, ok := c.Get("userID")
+		userId, ok := c.Get(userKey)
 		if !ok {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
 			c.Abort()

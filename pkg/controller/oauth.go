@@ -11,6 +11,7 @@ import (
 	"github.com/go-oauth2/oauth2/v4/server"
 	"github.com/go-oauth2/oauth2/v4/store"
 	oredis "github.com/go-oauth2/redis/v4"
+	"github.com/golang-jwt/jwt"
 	"gorm.io/gorm"
 )
 
@@ -36,8 +37,7 @@ func NewOauth2(db *gorm.DB, ts *oredis.TokenStore) *server.Server {
 
 	// token store
 	manager.MapTokenStorage(ts)
-	//manager.MapAccessGenerate(generates.NewJWTAccessGenerate("jwt", []byte("pibigstar"), jwt.SigningMethodHS512))
-	manager.MapAccessGenerate(generates.NewAccessGenerate())
+	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("jwt", []byte("secret"), jwt.SigningMethodHS512))
 	manager.MapClientStorage(clientStore)
 
 	srv := server.NewServer(server.NewConfig(), manager)

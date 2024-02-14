@@ -25,7 +25,7 @@ Content-Type: application/json
 }
 
 ### update user
-PUT http://localhost:8080/v1/user/2c228648-c997-11ee-919d-4a29f78ba46f
+PUT http://localhost:8080/v1/user/165f3376-cb2f-11ee-b228-4a29f78ba46f
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -44,7 +44,7 @@ Content-Type: application/json
 
 {
   "phone": "0634349640",
-  "password": "heeheehaha"
+  "password": "hell123"
 }
 
 ### forget pass
@@ -64,6 +64,13 @@ Content-Type: application/json
   "password": "hell123",
   "confirm_password": "hell123"
 }
+
+### logout
+GET http://localhost:8080/v1/loo
+Authorization: Bearer {{token}}
+
+### /
+GET http://localhost:8080
 
 ### access_token
 GET http://localhost:8080/oauth/validate_token?access_token=eyJhbGciOiJIUzUxMiIsImtpZCI6Imp3dCIsInR5cCI6IkpXVCJ9.eyJhdWQiOiIyMjIyMjIiLCJleHAiOjE3MDc1NjA0NzAsInN1YiI6IjQ5ZjJiNDhjLWM3ZWQtMTFlZS1hZWQyLTRhMjlmNzhiYTQ2ZiJ9.mxcJKdAscZ45rZhTQHEOBew-b8foAL1bnzZbAc0wCH4ikzScTiKEp5KbvgLR8wCRgrN63lOkF03ccmNwcrPolQ
