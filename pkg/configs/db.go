@@ -12,12 +12,16 @@ import (
 var DB *gorm.DB
 
 type DBConfig struct {
-	Host    string
-	Port    string
-	User    string
-	Pass    string
-	DBName  string
-	SSLMode string
+	Host       string
+	Port       string
+	User       string
+	Pass       string
+	DBName     string
+	SSLMode    string
+	AdminPhone string
+	AdminPass  string
+	UserPhone  string
+	UserPass   string
 }
 
 func Connect(conf *DBConfig) {
@@ -35,9 +39,9 @@ func Connect(conf *DBConfig) {
 	if err != nil {
 		panic(err)
 	}
-	admin := models.NewAdmin()
+	admin := models.NewAdmin(conf.AdminPhone, conf.AdminPass)
 	db.Create(&admin)
-	tester := models.NewUser()
+	tester := models.NewUser(conf.UserPhone, conf.UserPass)
 	db.Create(&tester)
 	DB = db
 }

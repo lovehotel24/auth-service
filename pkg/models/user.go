@@ -32,13 +32,13 @@ type ResetPass struct {
 	UserId     uuid.UUID `gorm:"type:uuid;index"`
 }
 
-func NewAdmin() *User {
+func NewAdmin(phone, pass string) *User {
 	admin := &User{
 		Name:  "admin",
-		Phone: "0634349640",
+		Phone: phone,
 		Role:  "ADMIN",
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte("hell123"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
 		fmt.Println(err)
 	}
@@ -47,13 +47,13 @@ func NewAdmin() *User {
 	return admin
 }
 
-func NewUser() *User {
+func NewUser(phone, pass string) *User {
 	user := &User{
 		Name:  "tester",
-		Phone: "0634349641",
+		Phone: phone,
 		Role:  "USER",
 	}
-	hash, err := bcrypt.GenerateFromPassword([]byte("hell123"), bcrypt.DefaultCost)
+	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
 		fmt.Println(err)
 	}

@@ -34,15 +34,19 @@ func Execute() {
 
 func init() {
 
-	rootCmd.Flags().String("pg-user", "postgres", "user name for postgres database.")
-	rootCmd.Flags().String("pg-pass", "postgres", "password for postgres database.")
-	rootCmd.Flags().String("pg-host", "localhost", "postgres server address.")
-	rootCmd.Flags().String("pg-port", "5432", "postgres server port.")
-	rootCmd.Flags().String("pg-db", "postgres", "postgres database name.")
-	rootCmd.Flags().String("pg-ssl", "disable", "postgres server ssl mode on or not.")
+	rootCmd.Flags().String("pg-user", "postgres", "user name for postgres database")
+	rootCmd.Flags().String("pg-pass", "postgres", "password for postgres database")
+	rootCmd.Flags().String("pg-host", "localhost", "postgres server address")
+	rootCmd.Flags().String("pg-port", "5432", "postgres server port")
+	rootCmd.Flags().String("pg-db", "postgres", "postgres database name")
+	rootCmd.Flags().String("pg-ssl", "disable", "postgres server ssl mode on or not")
 	rootCmd.Flags().String("redis-addr", "127.0.0.1:6379", "redis server address with port")
-	rootCmd.Flags().Int("redis-db", 15, "redis database name.")
-	rootCmd.Flags().String("redis-pass", "", "redis server password.")
+	rootCmd.Flags().Int("redis-db", 15, "redis database name")
+	rootCmd.Flags().String("redis-pass", "", "redis server password")
+	rootCmd.Flags().String("adm-ph", "0635248740", "initialize admin phone")
+	rootCmd.Flags().String("adm-pass", "hell123", "initialize admin password")
+	rootCmd.Flags().String("usr-ph", "0635248741", "initialize user phone")
+	rootCmd.Flags().String("usr-pass", "hell123", "initialize user password")
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix("auth")
@@ -55,18 +59,26 @@ func init() {
 	viper.BindPFlag("redis-addr", rootCmd.Flags().Lookup("redis-addr"))
 	viper.BindPFlag("redis-db", rootCmd.Flags().Lookup("redis-db"))
 	viper.BindPFlag("redis-pass", rootCmd.Flags().Lookup("redis-pass"))
+	viper.BindPFlag("adm-ph", rootCmd.Flags().Lookup("adm-ph"))
+	viper.BindPFlag("adm-pass", rootCmd.Flags().Lookup("adm-pass"))
+	viper.BindPFlag("usr-ph", rootCmd.Flags().Lookup("usr-ph"))
+	viper.BindPFlag("usr-pass", rootCmd.Flags().Lookup("usr-pass"))
 	viper.BindEnv("gin_mode", "GIN_MODE")
 	viper.AutomaticEnv()
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
 	dbConf := &configs.DBConfig{
-		Host:    viper.GetString("pg-host"),
-		Port:    viper.GetString("pg-port"),
-		User:    viper.GetString("pg-user"),
-		Pass:    viper.GetString("pg-pass"),
-		DBName:  viper.GetString("pg-db"),
-		SSLMode: viper.GetString("pg-ssl"),
+		Host:       viper.GetString("pg-host"),
+		Port:       viper.GetString("pg-port"),
+		User:       viper.GetString("pg-user"),
+		Pass:       viper.GetString("pg-pass"),
+		DBName:     viper.GetString("pg-db"),
+		SSLMode:    viper.GetString("pg-ssl"),
+		AdminPhone: viper.GetString("adm-ph"),
+		AdminPass:  viper.GetString("adm-pass"),
+		UserPhone:  viper.GetString("usr-ph"),
+		UserPass:   viper.GetString("usr-pass"),
 	}
 	redisConf := &configs.RedisConfig{
 		Addr:   viper.GetString("redis-addr"),

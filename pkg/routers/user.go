@@ -1,7 +1,6 @@
 package routers
 
 import (
-	"fmt"
 	"net/http"
 
 	"github.com/gin-gonic/gin"
@@ -28,7 +27,7 @@ func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore) {
 	v1UserRouter.POST("/forget_pass", controller.ForgetPass)
 	v1UserRouter.POST("/reset_pass", controller.ResetPass)
 	v1UserRouter.GET("/hello", controller.Hello)
-	v1UserRouter.GET("/loo", controller.Logout(ts))
+	v1UserRouter.GET("/logout", controller.Logout(ts))
 	v1UserRouter.POST("/login", controller.Login())
 }
 
@@ -48,9 +47,6 @@ func ValidateToken(srv *server.Server) gin.HandlerFunc {
 		}
 
 		c.Set(userKey, token.GetUserID())
-		c.Set(tokenKey, token.GetAccess())
-		a, _ := c.Get(tokenKey)
-		fmt.Println("token->", a.(string))
 		c.Next()
 	}
 }
