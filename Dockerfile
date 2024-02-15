@@ -6,14 +6,14 @@ COPY . /auth-service
 
 WORKDIR /auth-service
 
-RUN go build -ldflags "-X main.build=${BUILD_REF}"
+RUN go build -ldflags "-extldflags \"-static\" -X main.build=${BUILD_REF}"
 
-FROM alpine:3.19
+FROM scratch
 ARG BUILD_DATE
 ARG BUILD_REF
+COPY --from=alpine:latest /etc/ssl/certs/ca-certificates.crt /etc/ssl/certs/
+COPY --from=build_auth-service /auth-service/auth-service /service/auth-service
 
-COPY --from=build_auth-service /auth-service /service/auth-service/auth-service
-RUN ls -R /service/
 WORKDIR /service
 CMD ["./auth-service"]
 EXPOSE 8080

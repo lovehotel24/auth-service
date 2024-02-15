@@ -16,24 +16,6 @@ import (
 	"github.com/lovehotel24/auth-service/pkg/models"
 )
 
-const (
-	authServerURL = "http://localhost:8080"
-)
-
-var (
-	config = oauth2.Config{
-		ClientID:     "222222",
-		ClientSecret: "22222222",
-		Scopes:       []string{"all"},
-		RedirectURL:  "http://localhost:8080/oauth2",
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  authServerURL + "/oauth/authorize",
-			TokenURL: authServerURL + "/oauth/token",
-		},
-	}
-	globalToken *oauth2.Token
-)
-
 type userLogin struct {
 	Phone    string `json:"phone"`
 	Password string `json:"password"`
@@ -58,7 +40,7 @@ func PasswordAuthorizationHandler(db *gorm.DB) func(context.Context, string, str
 	}
 }
 
-func Login() gin.HandlerFunc {
+func Login(config oauth2.Config) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user userLogin
 		if err := c.BindJSON(&user); err != nil {

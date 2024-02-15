@@ -18,28 +18,26 @@ services:
     image: "redis:7-alpine"
     ports:
       - "6379:6379"
-    command: redis-server --save 20 1 --loglevel warning --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+    command: redis-server --save 20 1 --loglevel warning  --requirepass eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
     volumes:
       - ./tmp/redis_data:/var/lib/redis/data
 
-#  db-migrate:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: db-migrate
-#    command: migrate
-#    depends_on:
-#      - postgres
-#
-#  auth-service:
-#    build:
-#      context: .
-#      dockerfile: Dockerfile
-#    container_name: auth-service
-#    ports:
-#      - "8080:8080"
-#    depends_on:
-#      - postgres
+  auth-service:
+    build:
+      context: .
+      args:
+        - BUILD_REF=1.0
+      dockerfile: Dockerfile
+    container_name: auth-service
+    environment:
+      - AUTH_PG_HOST=postgres
+      - AUTH_REDIS_PASS=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+      - AUTH_REDIS_HOST=redis
+    ports:
+      - "8080:8080"
+    depends_on:
+      - redis
+      - postgres
 
 
 volumes:

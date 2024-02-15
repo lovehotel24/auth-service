@@ -4,25 +4,17 @@ import (
 	"log"
 	"time"
 
+	"github.com/go-oauth2/oauth2/v4"
 	"github.com/go-oauth2/oauth2/v4/errors"
 	"github.com/go-oauth2/oauth2/v4/generates"
 	"github.com/go-oauth2/oauth2/v4/manage"
-	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/server"
-	"github.com/go-oauth2/oauth2/v4/store"
 	oredis "github.com/go-oauth2/redis/v4"
 	"github.com/golang-jwt/jwt"
 	"gorm.io/gorm"
 )
 
-func NewOauth2(db *gorm.DB, ts *oredis.TokenStore) *server.Server {
-
-	clientStore := store.NewClientStore()
-	clientStore.Set("222222", &models.Client{
-		ID:     "222222",
-		Secret: "22222222",
-		Domain: "http://localhost:8080",
-	})
+func NewOauth2(db *gorm.DB, ts *oredis.TokenStore, clientStore oauth2.ClientStore) *server.Server {
 
 	cfg := &manage.Config{
 		AccessTokenExp:    time.Hour * 2,
@@ -35,7 +27,6 @@ func NewOauth2(db *gorm.DB, ts *oredis.TokenStore) *server.Server {
 	manager.SetAuthorizeCodeTokenCfg(manage.DefaultAuthorizeCodeTokenCfg)
 	manager.SetPasswordTokenCfg(cfg)
 
-	// token store
 	manager.MapTokenStorage(ts)
 	manager.MapAccessGenerate(generates.NewJWTAccessGenerate("jwt", []byte("secret"), jwt.SigningMethodHS512))
 	manager.MapClientStorage(clientStore)

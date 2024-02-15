@@ -6,16 +6,16 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/server"
 	oredis "github.com/go-oauth2/redis/v4"
+	"golang.org/x/oauth2"
 
 	"github.com/lovehotel24/auth-service/pkg/controller"
 )
 
 const (
-	userKey  = "userId"
-	tokenKey = "token"
+	userKey = "userId"
 )
 
-func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore) {
+func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore, client oauth2.Config) {
 	v1UserRouter := router.Group("/v1")
 	v1UserRouter.Use(ValidateToken(srv))
 	v1UserRouter.GET("/users", controller.GetUsers)
@@ -28,7 +28,7 @@ func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore) {
 	v1UserRouter.POST("/reset_pass", controller.ResetPass)
 	v1UserRouter.GET("/hello", controller.Hello)
 	v1UserRouter.GET("/logout", controller.Logout(ts))
-	v1UserRouter.POST("/login", controller.Login())
+	v1UserRouter.POST("/login", controller.Login(client))
 }
 
 func ValidateToken(srv *server.Server) gin.HandlerFunc {

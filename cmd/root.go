@@ -1,12 +1,17 @@
 package cmd
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
+	"github.com/go-oauth2/oauth2/v4/models"
+	"github.com/go-oauth2/oauth2/v4/store"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
+	"golang.org/x/oauth2"
 
 	"github.com/lovehotel24/auth-service/pkg/configs"
 	"github.com/lovehotel24/auth-service/pkg/controller"
@@ -40,13 +45,18 @@ func init() {
 	rootCmd.Flags().String("pg-port", "5432", "postgres server port")
 	rootCmd.Flags().String("pg-db", "postgres", "postgres database name")
 	rootCmd.Flags().String("pg-ssl", "disable", "postgres server ssl mode on or not")
-	rootCmd.Flags().String("redis-addr", "127.0.0.1:6379", "redis server address with port")
+	rootCmd.Flags().String("redis-host", "127.0.0.1", "redis server host")
+	rootCmd.Flags().String("redis-port", "6379", "redis server port")
+	rootCmd.Flags().String("redis-user", "default", "username to access redis server")
 	rootCmd.Flags().Int("redis-db", 15, "redis database name")
-	rootCmd.Flags().String("redis-pass", "", "redis server password")
+	rootCmd.Flags().String("redis-pass", "", "password for redis server")
 	rootCmd.Flags().String("adm-ph", "0635248740", "initialize admin phone")
 	rootCmd.Flags().String("adm-pass", "hell123", "initialize admin password")
 	rootCmd.Flags().String("usr-ph", "0635248741", "initialize user phone")
 	rootCmd.Flags().String("usr-pass", "hell123", "initialize user password")
+	rootCmd.Flags().String("client-id", "222222", "Oauth2 client id")
+	rootCmd.Flags().String("client-secret", "22222222", "Oauth2 client secret")
+	rootCmd.Flags().String("port", "8080", "auth service port")
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix("auth")
@@ -56,13 +66,18 @@ func init() {
 	viper.BindPFlag("pg-port", rootCmd.Flags().Lookup("pg-port"))
 	viper.BindPFlag("pg-db", rootCmd.Flags().Lookup("pg-db"))
 	viper.BindPFlag("pg-ssl", rootCmd.Flags().Lookup("pg-ssl"))
-	viper.BindPFlag("redis-addr", rootCmd.Flags().Lookup("redis-addr"))
+	viper.BindPFlag("redis-host", rootCmd.Flags().Lookup("redis-host"))
+	viper.BindPFlag("redis-port", rootCmd.Flags().Lookup("redis-port"))
 	viper.BindPFlag("redis-db", rootCmd.Flags().Lookup("redis-db"))
+	viper.BindPFlag("redis-user", rootCmd.Flags().Lookup("redis-user"))
 	viper.BindPFlag("redis-pass", rootCmd.Flags().Lookup("redis-pass"))
 	viper.BindPFlag("adm-ph", rootCmd.Flags().Lookup("adm-ph"))
 	viper.BindPFlag("adm-pass", rootCmd.Flags().Lookup("adm-pass"))
 	viper.BindPFlag("usr-ph", rootCmd.Flags().Lookup("usr-ph"))
 	viper.BindPFlag("usr-pass", rootCmd.Flags().Lookup("usr-pass"))
+	viper.BindPFlag("client-id", rootCmd.Flags().Lookup("client-id"))
+	viper.BindPFlag("client-secret", rootCmd.Flags().Lookup("client-secret"))
+	viper.BindPFlag("port", rootCmd.Flags().Lookup("port"))
 	viper.BindEnv("gin_mode", "GIN_MODE")
 	viper.AutomaticEnv()
 }
@@ -80,22 +95,42 @@ func runCommand(cmd *cobra.Command, args []string) {
 		UserPhone:  viper.GetString("usr-ph"),
 		UserPass:   viper.GetString("usr-pass"),
 	}
+
 	redisConf := &configs.RedisConfig{
-		Addr:   viper.GetString("redis-addr"),
+		Addr:   fmt.Sprintf("%s:%s", viper.GetString("redis-host"), viper.GetString("redis-port")),
 		DBName: viper.GetInt("redis-db"),
 		Pass:   viper.GetString("redis-pass"),
+		User:   viper.GetString("redis-user"),
 	}
+
+	authServerURL := fmt.Sprintf("http://localhost:%s", viper.GetString("port"))
+
+	config := oauth2.Config{
+		ClientID:     viper.GetString("client-id"),
+		ClientSecret: viper.GetString("client-secret"),
+		Scopes:       []string{"all"},
+		RedirectURL:  "http://localhost:8080/oauth2",
+		Endpoint: oauth2.Endpoint{
+			AuthURL:  authServerURL + "/oauth/authorize",
+			TokenURL: authServerURL + "/oauth/token",
+		},
+	}
+
+	clientStore := store.NewClientStore()
+	clientStore.Set(viper.GetString("client-id"), &models.Client{
+		ID:     viper.GetString("client-id"),
+		Secret: viper.GetString("client-secret"),
+		Domain: authServerURL,
+	})
+
 	router := gin.New()
 	configs.Connect(dbConf)
 	tokenStore := configs.NewTokenStore(redisConf)
-	//sessionStore := configs.NewSessionStore()
-	oauthSvr := controller.NewOauth2(configs.DB, tokenStore)
-	//oauthSvr.SetPasswordAuthorizationHandler(controller.PasswordAuthorizationHandler(configs.DB))
+	oauthSvr := controller.NewOauth2(configs.DB, tokenStore, clientStore)
 	router.Use(gin.Logger())
-	routers.UserRouter(router, oauthSvr, tokenStore)
+	routers.UserRouter(router, oauthSvr, tokenStore, config)
 	routers.OauthRouter(router, oauthSvr)
-	err := router.Run(":8080")
-	if err != nil {
-		return
+	if err := router.Run(fmt.Sprintf(":%s", viper.GetString("port"))); err != nil {
+		log.Fatalln(err)
 	}
 }
