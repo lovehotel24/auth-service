@@ -1,6 +1,8 @@
 package configs
 
 import (
+	"fmt"
+
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -9,8 +11,18 @@ import (
 
 var DB *gorm.DB
 
-func Connect() {
-	db, err := gorm.Open(postgres.Open("postgres://postgres:postgres@localhost:5432/postgres?sslmode=disable"), &gorm.Config{})
+type DBConfig struct {
+	Host    string
+	Port    string
+	User    string
+	Pass    string
+	DBName  string
+	SSLMode string
+}
+
+func Connect(conf *DBConfig) {
+	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Bangkok", conf.Host, conf.User, conf.Pass, conf.DBName, conf.Port, conf.SSLMode)
+	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
 		panic(err)
 	}

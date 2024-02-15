@@ -5,10 +5,16 @@ import (
 	"github.com/go-redis/redis/v8"
 )
 
-func NewTokenStore() *oredis.TokenStore {
+type RedisConfig struct {
+	Addr   string
+	DBName int
+	Pass   string
+}
+
+func NewTokenStore(conf *RedisConfig) *oredis.TokenStore {
 	ts := oredis.NewRedisStore(&redis.Options{
-		Addr:     "127.0.0.1:6379",
-		DB:       15,
+		Addr:     conf.Addr,
+		DB:       conf.DBName,
 		Password: "eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81",
 	})
 
