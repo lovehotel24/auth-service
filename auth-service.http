@@ -4,7 +4,7 @@ Content-Type: application/json
 
 {
   "phone": "0635248740",
-  "password": "hell123"
+  "password": "aeiou123"
 }
 
 ### get all users
@@ -28,13 +28,13 @@ Content-Type: application/json
 
 {
   "name": "zinzin",
-  "phone": "0634349640",
-  "role": "ADMIN",
+  "phone": "0634349645",
+  "role": "USER",
   "password": "asdf"
 }
 
 ### update user
-PUT http://localhost:8080/v1/user/165f3376-cb2f-11ee-b228-4a29f78ba46f
+PUT http://localhost:8080/v1/user/8c7aaffc-ce42-11ee-8c5d-0242ac160004
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -51,7 +51,7 @@ POST http://localhost:8080/v1/forget_pass
 Content-Type: application/json
 
 {
-  "phone": "0634349640"
+  "phone": "0635248740"
 }
 
 ### reset pass
@@ -59,9 +59,9 @@ POST http://localhost:8080/v1/reset_pass
 Content-Type: application/json
 
 {
-  "code": "964757",
-  "password": "hell123",
-  "confirm_password": "hell123"
+  "code": "221945",
+  "password": "aeiou123",
+  "confirm_password": "aeiou123"
 }
 
 ### logout
