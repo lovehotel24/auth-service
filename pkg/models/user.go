@@ -8,23 +8,21 @@ import (
 	"gorm.io/gorm"
 )
 
-type User struct {
+type DBUser struct {
 	gorm.Model
-	Id           uuid.UUID `json:"id" gorm:"primary_key;type:uuid;default:uuid_generate_v4();"`
-	Name         string    `json:"name"`
-	Phone        string    `json:"phone" gorm:"<-:create;uniqueIndex"`
-	Role         string    `json:"role"`
-	Password     string    `json:"password"`
-	PasswordHash []byte    `json:"-"`
+	Id           uuid.UUID `gorm:"primary_key;type:uuid;"`
+	Phone        string    `gorm:"<-:create;uniqueIndex"`
+	PasswordHash []byte
 }
 
-func (user *User) BeforeCreate(tx *gorm.DB) (err error) {
-	user.Id, err = uuid.NewUUID()
-	if err != nil {
-		return err
-	}
-	return nil
-}
+//
+//func (user *DBUser) BeforeCreate(tx *gorm.DB) (err error) {
+//	user.Id, err = uuid.NewUUID()
+//	if err != nil {
+//		return err
+//	}
+//	return nil
+//}
 
 type ResetPass struct {
 	gorm.Model
@@ -32,11 +30,9 @@ type ResetPass struct {
 	UserId     uuid.UUID `gorm:"type:uuid;index"`
 }
 
-func NewAdmin(phone, pass string) *User {
-	admin := &User{
-		Name:  "admin",
+func NewAdmin(phone, pass string) *DBUser {
+	admin := &DBUser{
 		Phone: phone,
-		Role:  "ADMIN",
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {
@@ -47,11 +43,9 @@ func NewAdmin(phone, pass string) *User {
 	return admin
 }
 
-func NewUser(phone, pass string) *User {
-	user := &User{
-		Name:  "tester",
+func NewUser(phone, pass string) *DBUser {
+	user := &DBUser{
 		Phone: phone,
-		Role:  "USER",
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
 	if err != nil {

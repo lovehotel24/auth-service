@@ -4,7 +4,7 @@ services:
 
   postgres:
     image: postgres:latest
-    container_name: postgres
+    container_name: postgres-auth
     environment:
       POSTGRES_DB: postgres
       POSTGRES_USER: postgres

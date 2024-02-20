@@ -23,7 +23,7 @@ type userLogin struct {
 
 func PasswordAuthorizationHandler(db *gorm.DB) func(context.Context, string, string, string) (string, error) {
 	return func(ctx context.Context, clientID, phone, password string) (string, error) {
-		var user models.User
+		var user models.DBUser
 		if clientID != "222222" {
 			return "", errors.ErrUnauthorizedClient
 		}
@@ -68,7 +68,7 @@ func Logout(ts *oredis.TokenStore) gin.HandlerFunc {
 			fmt.Println(err)
 		}
 		c.JSON(http.StatusOK, gin.H{
-			"message": "User Sign out successfully",
+			"message": "DBUser Sign out successfully",
 		})
 	}
 }

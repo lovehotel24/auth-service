@@ -13,6 +13,10 @@ import (
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
 
+	"google.golang.org/grpc"
+
+	"github.com/lovehotel24/booking-service/pkg/grpc/userpb"
+
 	"github.com/lovehotel24/auth-service/pkg/configs"
 	"github.com/lovehotel24/auth-service/pkg/controller"
 	"github.com/lovehotel24/auth-service/pkg/routers"
@@ -57,6 +61,7 @@ func init() {
 	rootCmd.Flags().String("client-id", "222222", "Oauth2 client id")
 	rootCmd.Flags().String("client-secret", "22222222", "Oauth2 client secret")
 	rootCmd.Flags().String("port", "8080", "auth service port")
+	rootCmd.Flags().String("grp-host", ":50051", "grpc server to connect")
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix("auth")
@@ -78,6 +83,7 @@ func init() {
 	viper.BindPFlag("client-id", rootCmd.Flags().Lookup("client-id"))
 	viper.BindPFlag("client-secret", rootCmd.Flags().Lookup("client-secret"))
 	viper.BindPFlag("port", rootCmd.Flags().Lookup("port"))
+	viper.BindPFlag("grpc-host", rootCmd.Flags().Lookup("grpc-host"))
 	viper.BindEnv("gin_mode", "GIN_MODE")
 	viper.AutomaticEnv()
 }
@@ -122,13 +128,17 @@ func runCommand(cmd *cobra.Command, args []string) {
 		Secret: viper.GetString("client-secret"),
 		Domain: authServerURL,
 	})
-
+	gConn, err := grpc.Dial(viper.GetString("grpc-host"))
+	if err != nil {
+		panic(err)
+	}
+	grpcUserClient := userpb.NewUserServiceClient(gConn)
 	router := gin.New()
 	configs.Connect(dbConf)
 	tokenStore := configs.NewTokenStore(redisConf)
 	oauthSvr := controller.NewOauth2(configs.DB, tokenStore, clientStore)
 	router.Use(gin.Logger())
-	routers.UserRouter(router, oauthSvr, tokenStore, config)
+	routers.UserRouter(router, oauthSvr, tokenStore, config, grpcUserClient)
 	routers.OauthRouter(router, oauthSvr)
 	if err := router.Run(fmt.Sprintf(":%s", viper.GetString("port"))); err != nil {
 		log.Fatalln(err)

@@ -6,6 +6,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/server"
 	oredis "github.com/go-oauth2/redis/v4"
+	"github.com/lovehotel24/booking-service/pkg/grpc/userpb"
 	"golang.org/x/oauth2"
 
 	"github.com/lovehotel24/auth-service/pkg/controller"
@@ -15,15 +16,15 @@ const (
 	userKey = "userId"
 )
 
-func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore, client oauth2.Config) {
+func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore, client oauth2.Config, grpcClient userpb.UserServiceClient) {
 	v1UserRouter := router.Group("/v1")
 	v1UserRouter.Use(ValidateToken(srv))
-	v1UserRouter.GET("/users", controller.GetUsers)
-	v1UserRouter.GET("/user/:id", controller.GetUser)
-	v1UserRouter.GET("/current_user", controller.CurrentUser)
-	v1UserRouter.POST("/register", controller.CreateUser)
+	v1UserRouter.GET("/users", controller.GetUsers(grpcClient))
+	v1UserRouter.GET("/user/:id", controller.GetUser(grpcClient))
+	v1UserRouter.GET("/current_user", controller.CurrentUser(grpcClient))
+	v1UserRouter.POST("/register", controller.CreateUser(grpcClient))
 	v1UserRouter.DELETE("/user/:id", controller.OnlyAdmin(), controller.DeleteUser)
-	v1UserRouter.PUT("/user/:id", controller.UpdateUser)
+	v1UserRouter.PUT("/user/:id", controller.UpdateUser(grpcClient))
 	v1UserRouter.POST("/forget_pass", controller.ForgetPass)
 	v1UserRouter.POST("/reset_pass", controller.ResetPass)
 	v1UserRouter.GET("/hello", controller.Hello)

@@ -1,10 +1,14 @@
 package controller
 
 import (
+	"context"
 	"fmt"
 	"net/http"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
+	"github.com/google/uuid"
+	"github.com/lovehotel24/booking-service/pkg/grpc/userpb"
 	"golang.org/x/crypto/bcrypt"
 
 	"github.com/lovehotel24/auth-service/pkg/configs"
@@ -15,108 +19,224 @@ const (
 	userKey = "userId"
 )
 
-func GetUsers(c *gin.Context) {
-	var users []models.User
-	configs.DB.Find(&users)
-	c.JSON(http.StatusOK, &users)
+type User struct {
+	Id       string `json:"id"`
+	Name     string `json:"name"`
+	Phone    string `json:"phone"`
+	Role     string `json:"role"`
+	Password string `json:"password"`
 }
 
-func getUserById(userID interface{}) models.User {
-	var user models.User
+func NewUserId() uuid.UUID {
+	userId, err := uuid.NewUUID()
+	if err != nil {
+		fmt.Println("fail to create uuid")
+	}
+	return userId
+}
+
+func getDBUserById(userID interface{}) models.DBUser {
+	var user models.DBUser
 	configs.DB.Where("id = ?", userID).First(&user)
 	return user
 }
 
-func getUserByPhone(phone string) models.User {
-	var user models.User
+func getDBUserByPhone(phone string) models.DBUser {
+	var user models.DBUser
 	configs.DB.Where("phone = ?", phone).First(&user)
 	return user
 }
 
-func CurrentUser(c *gin.Context) {
-	userID, ok := c.Get(userKey)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to current user"})
-		return
+func getBookUserById(userId string, grpcClient userpb.UserServiceClient) (User, bool) {
+	getUser, err := grpcClient.GetUser(context.Background(), &userpb.GetUserRequest{Id: &userpb.UUID{Value: userId}})
+	if err != nil {
+		return User{}, false
 	}
-	user := getUserById(userID)
-	c.JSON(http.StatusOK, &user)
+	gUser := getUser.GetUser()
+	user := User{
+		Id:    gUser.GetId().GetValue(),
+		Name:  gUser.GetName(),
+		Phone: gUser.GetPhone(),
+		Role:  gUser.GetRole(),
+	}
+	return user, true
 }
 
-func GetUser(c *gin.Context) {
-	var user models.User
-	configs.DB.Where("id = ?", c.Param("id")).First(&user)
-	c.JSON(http.StatusOK, &user)
+func CurrentUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userID, ok := c.Get(userKey)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to current user"})
+			return
+		}
+		user, done := getBookUserById(userID.(string), grpcClient)
+		if !done {
+			return
+		}
+		c.JSON(http.StatusOK, &user)
+	}
 }
 
-func CreateUser(c *gin.Context) {
-	var user models.User
-	if err := c.BindJSON(&user); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+func GetUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		userId := c.Param("id")
+		user, done := getBookUserById(userId, grpcClient)
+		if !done {
+			return
+		}
+		configs.DB.Where("id = ?").First(&user)
+		c.JSON(http.StatusOK, &user)
 	}
-
-	if hash, ok := generateHashPasswd(c, user.Password); ok {
-		user.PasswordHash = hash
-	} else {
-		return
-	}
-
-	user.Password = ""
-	configs.DB.Create(&user)
-	c.JSON(http.StatusOK, &user)
 }
 
-func UpdateUser(c *gin.Context) {
-	var updateUser models.User
-	var currentUser models.User
-	userId, ok := c.Get(userKey)
-	if !ok {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
-		return
-	}
-	user := getUserById(userId)
-	if err := c.BindJSON(&updateUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	configs.DB.Model(models.User{}).Where("id = ?", user.Id).First(&currentUser)
-	if currentUser.Id != user.Id {
-		c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID for the update operation"})
-		return
-	}
-	fmt.Println("password before -> ", user.PasswordHash)
+func GetUsers(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		//var users []User
+		//blank := &empty.Empty{}
+		//allUsers, err := grpcClient.GetAllUsers(context.Background(), blank)
+		//if err != nil {
+		//	return
+		//}
+		//for _, v := range allUsers.GetUsers() {
+		//	user := User{
+		//		Id:    v.GetId().GetValue(),
+		//		Name:  v.GetName(),
+		//		Phone: v.GetPhone(),
+		//		Role:  v.GetRole(),
+		//	}
+		//	users = append(users, user)
+		//}
+		//c.JSON(http.StatusOK, &users)
+		limit := 10
+		offset, _ := strconv.Atoi(c.Query("offset"))
 
-	if updateUser.Password != "" {
-		fmt.Println("update password -> ", updateUser.Password)
-		if hash, ok := generateHashPasswd(c, updateUser.Password); ok {
-			user.PasswordHash = hash
+		req := &userpb.GetAllUserRequest{
+			Limit:  int32(limit),
+			Offset: int32(offset),
+		}
+
+		allUsers, err := grpcClient.GetAllUsers(context.Background(), req)
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
+			return
+		}
+
+		var users []User
+		for _, v := range allUsers.GetUsers() {
+			user := User{
+				Id:    v.GetId().GetValue(),
+				Name:  v.GetName(),
+				Phone: v.GetPhone(),
+				Role:  v.GetRole(),
+			}
+			users = append(users, user)
+		}
+
+		c.JSON(http.StatusOK, &users)
+	}
+}
+
+func CreateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var user User
+		var dbUser models.DBUser
+		if err := c.BindJSON(&user); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+
+		userId := NewUserId()
+		dbUser.Id = userId
+
+		dbUser.Phone = user.Phone
+
+		if hash, ok := generateHashPasswd(c, user.Password); ok {
+			dbUser.PasswordHash = hash
 		} else {
 			return
 		}
-	}
+		user.Password = ""
 
-	if updateUser.Role != "" && updateUser.Role != user.Role && user.Role == "ADMIN" {
-		user.Role = updateUser.Role
+		configs.DB.Create(&dbUser)
+		_, err := grpcClient.CreateUser(context.Background(), &userpb.CreateUserRequest{User: &userpb.User{
+			Id:    &userpb.UUID{Value: userId.String()},
+			Name:  user.Name,
+			Phone: user.Phone,
+			Role:  user.Role,
+		}})
+		if err != nil {
+			return
+		}
+		c.JSON(http.StatusOK, &user)
 	}
+}
 
-	if updateUser.Phone != "" {
-		user.Phone = updateUser.Phone
+func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var updateUser User
+		var dbUpdateUser models.DBUser
+		userId, ok := c.Get(userKey)
+		if !ok {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
+			return
+		}
+		user := getDBUserById(userId)
+		if err := c.BindJSON(&updateUser); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+		}
+		//configs.DB.Model(models.DBUser{}).Where("id = ?", user.Id).First(&currentUser)
+		if updateUser.Id != userId.(string) {
+			c.JSON(http.StatusBadRequest, gin.H{"error": "invalid user ID for the update operation"})
+			return
+		}
+		updateBookUser := &userpb.User{
+			Id: &userpb.UUID{Value: userId.(string)},
+		}
+
+		if updateUser.Phone != "" {
+			dbUpdateUser.Phone = updateUser.Phone
+			updateBookUser.Phone = updateUser.Phone
+		} else {
+			dbUpdateUser.Phone = user.Phone
+		}
+
+		if updateUser.Password != "" {
+			if hash, ok := generateHashPasswd(c, updateUser.Password); ok {
+				dbUpdateUser.PasswordHash = hash
+			} else {
+				return
+			}
+		} else {
+			dbUpdateUser.PasswordHash = user.PasswordHash
+		}
+
+		if updateUser.Name != "" {
+			updateBookUser.Name = updateUser.Name
+		}
+
+		if updateUser.Role != "" {
+			updateBookUser.Role = updateUser.Role
+		}
+
+		_, err := grpcClient.UpdateUser(context.Background(), &userpb.UpdateUserRequest{User: updateBookUser})
+		if err != nil {
+			return
+		}
+
+		updateUser.Password = ""
+
+		if err := configs.DB.Save(dbUpdateUser).Error; err != nil {
+			fmt.Println(err)
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
+			return
+		}
+		c.JSON(http.StatusOK, &user)
 	}
-
-	user.Name = updateUser.Name
-	user.Password = ""
-
-	if err := configs.DB.Save(&user).Error; err != nil {
-		fmt.Println(err)
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
-		return
-	}
-	c.JSON(http.StatusOK, &user)
 }
 
 func DeleteUser(c *gin.Context) {
-	var user models.User
+	var user models.DBUser
 	configs.DB.Where("id = ?", c.Param("id")).Delete(&user)
 	c.JSON(http.StatusOK, &user)
 }
@@ -131,7 +251,7 @@ func ForgetPass(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user := getUserByPhone(forget.Phone)
+	user := getDBUserByPhone(forget.Phone)
 	newReset := models.ResetPass{
 		VerifyCode: configs.EncodeToString(6),
 		UserId:     user.Id,
@@ -149,7 +269,7 @@ type resetPass struct {
 func ResetPass(c *gin.Context) {
 	var reset resetPass
 	var forget models.ResetPass
-	var user models.User
+	var user models.DBUser
 	if err := c.BindJSON(&reset); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
@@ -160,7 +280,7 @@ func ResetPass(c *gin.Context) {
 		return
 	}
 	configs.DB.Model(&models.ResetPass{}).Where("verify_code = ?", reset.Code).First(&forget)
-	configs.DB.Model(&models.User{}).Where("id = ?", forget.UserId).First(&user)
+	configs.DB.Model(&models.DBUser{}).Where("id = ?", forget.UserId).First(&user)
 
 	if hash, ok := generateHashPasswd(c, reset.Password); ok {
 		user.PasswordHash = hash
@@ -188,19 +308,19 @@ func generateHashPasswd(c *gin.Context, pass string) ([]byte, bool) {
 
 func OnlyAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userId, ok := c.Get(userKey)
-		if !ok {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
-			return
-		}
-		user := getUserById(userId)
-
-		if user.Role != "ADMIN" {
-			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-			c.Abort()
-			return
-		}
+		//userId, ok := c.Get(userKey)
+		//if !ok {
+		//	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		//	c.Abort()
+		//	return
+		//}
+		//user := getDBUserById(userId)
+		//
+		//if user.Role != "ADMIN" {
+		//	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+		//	c.Abort()
+		//	return
+		//}
 
 		c.Next()
 	}

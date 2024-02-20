@@ -31,7 +31,7 @@ func Connect(conf *DBConfig) {
 		panic(err)
 	}
 	db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
-	err = db.AutoMigrate(&models.User{})
+	err = db.AutoMigrate(&models.DBUser{})
 	if err != nil {
 		panic(err)
 	}
