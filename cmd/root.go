@@ -12,6 +12,7 @@ import (
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
+	"google.golang.org/grpc/credentials/insecure"
 
 	"google.golang.org/grpc"
 
@@ -61,7 +62,7 @@ func init() {
 	rootCmd.Flags().String("client-id", "222222", "Oauth2 client id")
 	rootCmd.Flags().String("client-secret", "22222222", "Oauth2 client secret")
 	rootCmd.Flags().String("port", "8080", "auth service port")
-	rootCmd.Flags().String("grp-host", ":50051", "grpc server to connect")
+	rootCmd.Flags().String("grpc-host", ":50051", "grpc server to connect")
 	replacer := strings.NewReplacer("-", "_")
 	viper.SetEnvKeyReplacer(replacer)
 	viper.SetEnvPrefix("auth")
@@ -128,13 +129,13 @@ func runCommand(cmd *cobra.Command, args []string) {
 		Secret: viper.GetString("client-secret"),
 		Domain: authServerURL,
 	})
-	gConn, err := grpc.Dial(viper.GetString("grpc-host"))
+	gConn, err := grpc.Dial(viper.GetString("grpc-host"), grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
 		panic(err)
 	}
 	grpcUserClient := userpb.NewUserServiceClient(gConn)
 	router := gin.New()
-	configs.Connect(dbConf)
+	configs.Connect(dbConf, grpcUserClient)
 	tokenStore := configs.NewTokenStore(redisConf)
 	oauthSvr := controller.NewOauth2(configs.DB, tokenStore, clientStore)
 	router.Use(gin.Logger())

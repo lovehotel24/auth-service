@@ -31,7 +31,6 @@ func PasswordAuthorizationHandler(db *gorm.DB) func(context.Context, string, str
 		if err != nil {
 			return "", errors.ErrUnauthorizedClient
 		}
-		fmt.Println(user.Password)
 		err = bcrypt.CompareHashAndPassword(user.PasswordHash, []byte(password))
 		if err != nil {
 			return "", errors.ErrUnauthorizedClient

@@ -35,9 +35,9 @@ func NewUserId() uuid.UUID {
 	return userId
 }
 
-func getDBUserById(userID interface{}) models.DBUser {
+func getDBUserById(userId interface{}) models.DBUser {
 	var user models.DBUser
-	configs.DB.Where("id = ?", userID).First(&user)
+	configs.DB.Where("id = ?", userId).First(&user)
 	return user
 }
 
@@ -64,13 +64,14 @@ func getBookUserById(userId string, grpcClient userpb.UserServiceClient) (User, 
 
 func CurrentUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		userID, ok := c.Get(userKey)
+		userId, ok := c.Get(userKey)
 		if !ok {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to current user"})
 			return
 		}
-		user, done := getBookUserById(userID.(string), grpcClient)
+		user, done := getBookUserById(userId.(string), grpcClient)
 		if !done {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
 			return
 		}
 		c.JSON(http.StatusOK, &user)
@@ -82,6 +83,7 @@ func GetUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 		userId := c.Param("id")
 		user, done := getBookUserById(userId, grpcClient)
 		if !done {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 			return
 		}
 		configs.DB.Where("id = ?").First(&user)
@@ -157,7 +159,6 @@ func CreateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 		}
 		user.Password = ""
 
-		configs.DB.Create(&dbUser)
 		_, err := grpcClient.CreateUser(context.Background(), &userpb.CreateUserRequest{User: &userpb.User{
 			Id:    &userpb.UUID{Value: userId.String()},
 			Name:  user.Name,
@@ -165,8 +166,10 @@ func CreateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 			Role:  user.Role,
 		}})
 		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 			return
 		}
+		configs.DB.Create(&dbUser)
 		c.JSON(http.StatusOK, &user)
 	}
 }
@@ -221,6 +224,7 @@ func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 
 		_, err := grpcClient.UpdateUser(context.Background(), &userpb.UpdateUserRequest{User: updateBookUser})
 		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 			return
 		}
 
@@ -235,10 +239,17 @@ func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 	}
 }
 
-func DeleteUser(c *gin.Context) {
-	var user models.DBUser
-	configs.DB.Where("id = ?", c.Param("id")).Delete(&user)
-	c.JSON(http.StatusOK, &user)
+func DeleteUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+	return func(c *gin.Context) {
+		var user models.DBUser
+		_, err := grpcClient.DeleteUser(context.Background(), &userpb.DeleteUserRequest{Id: &userpb.UUID{Value: c.Param("id")}})
+		if err != nil {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
+			return
+		}
+		configs.DB.Where("id = ?", c.Param("id")).Delete(&user)
+		c.JSON(http.StatusOK, &user)
+	}
 }
 
 type forgetPass struct {
@@ -306,21 +317,25 @@ func generateHashPasswd(c *gin.Context, pass string) ([]byte, bool) {
 	return hash, true
 }
 
-func OnlyAdmin() gin.HandlerFunc {
+func OnlyAdmin(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 	return func(c *gin.Context) {
-		//userId, ok := c.Get(userKey)
-		//if !ok {
-		//	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		//	c.Abort()
-		//	return
-		//}
-		//user := getDBUserById(userId)
-		//
-		//if user.Role != "ADMIN" {
-		//	c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
-		//	c.Abort()
-		//	return
-		//}
+		userId, ok := c.Get(userKey)
+		if !ok {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.Abort()
+			return
+		}
+		user, done := getBookUserById(userId.(string), grpcClient)
+		if !done {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user info"})
+			return
+		}
+
+		if user.Role != "ADMIN" {
+			c.JSON(http.StatusUnauthorized, gin.H{"error": "Unauthorized"})
+			c.Abort()
+			return
+		}
 
 		c.Next()
 	}

@@ -4,7 +4,7 @@ Content-Type: application/json
 
 {
   "phone": "0635248740",
-  "password": "aeiou123"
+  "password": "hell123"
 }
 
 ### get all users
@@ -13,7 +13,7 @@ Accept: application/json
 Authorization: Bearer {{token}}
 
 ### get single user
-GET http://localhost:8080/v1/user/4d501aca-c7ed-11ee-aed2-4a29f78ba46f
+GET http://localhost:8080/v1/user/aa6590cc-d081-11ee-b45c-4a29f78ba46e
 Accept: application/json
 Authorization: Bearer {{token}}
 
@@ -34,7 +34,7 @@ Content-Type: application/json
 }
 
 ### update user
-PUT http://localhost:8080/v1/user/8c7aaffc-ce42-11ee-8c5d-0242ac160004
+PUT http://localhost:8080/v1/user/aa58390e-d081-11ee-b45c-4a29f78ba46e
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
@@ -43,7 +43,7 @@ Authorization: Bearer {{token}}
 }
 
 ### delete user
-DELETE http://localhost:8080/v1/user/49f2b48c-c7ed-11ee-aed2-4a29f78ba46f
+DELETE http://localhost:8080/v1/user/aa6590cc-d081-11ee-b45c-4a29f78ba46e
 Authorization: Bearer {{token}}
 
 ### forget pass

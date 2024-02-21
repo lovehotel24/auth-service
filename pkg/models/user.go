@@ -1,9 +1,11 @@
 package models
 
 import (
+	"context"
 	"fmt"
 
 	"github.com/google/uuid"
+	"github.com/lovehotel24/booking-service/pkg/grpc/userpb"
 	"golang.org/x/crypto/bcrypt"
 	"gorm.io/gorm"
 )
@@ -30,8 +32,19 @@ type ResetPass struct {
 	UserId     uuid.UUID `gorm:"type:uuid;index"`
 }
 
-func NewAdmin(phone, pass string) *DBUser {
+func NewAdmin(phone, pass string, grpcClient userpb.UserServiceClient) *DBUser {
+	userId := NewUserId()
+	_, err := grpcClient.CreateUser(context.Background(), &userpb.CreateUserRequest{User: &userpb.User{
+		Id:    &userpb.UUID{Value: userId.String()},
+		Name:  "admin",
+		Phone: phone,
+		Role:  "ADMIN",
+	}})
+	if err != nil {
+		fmt.Printf("Fail to create admin user: %v", err.Error())
+	}
 	admin := &DBUser{
+		Id:    userId,
 		Phone: phone,
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
@@ -43,8 +56,19 @@ func NewAdmin(phone, pass string) *DBUser {
 	return admin
 }
 
-func NewUser(phone, pass string) *DBUser {
+func NewUser(phone, pass string, grpcClient userpb.UserServiceClient) *DBUser {
+	userId := NewUserId()
+	_, err := grpcClient.CreateUser(context.Background(), &userpb.CreateUserRequest{User: &userpb.User{
+		Id:    &userpb.UUID{Value: userId.String()},
+		Name:  "test",
+		Phone: phone,
+		Role:  "USER",
+	}})
+	if err != nil {
+		fmt.Printf("Fail to create test user: %v", err.Error())
+	}
 	user := &DBUser{
+		Id:    userId,
 		Phone: phone,
 	}
 	hash, err := bcrypt.GenerateFromPassword([]byte(pass), bcrypt.DefaultCost)
@@ -54,4 +78,12 @@ func NewUser(phone, pass string) *DBUser {
 	user.PasswordHash = hash
 
 	return user
+}
+
+func NewUserId() uuid.UUID {
+	userId, err := uuid.NewUUID()
+	if err != nil {
+		fmt.Println("fail to create uuid")
+	}
+	return userId
 }

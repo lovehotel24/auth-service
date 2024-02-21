@@ -23,7 +23,7 @@ func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore, c
 	v1UserRouter.GET("/user/:id", controller.GetUser(grpcClient))
 	v1UserRouter.GET("/current_user", controller.CurrentUser(grpcClient))
 	v1UserRouter.POST("/register", controller.CreateUser(grpcClient))
-	v1UserRouter.DELETE("/user/:id", controller.OnlyAdmin(), controller.DeleteUser)
+	v1UserRouter.DELETE("/user/:id", controller.OnlyAdmin(grpcClient), controller.DeleteUser(grpcClient))
 	v1UserRouter.PUT("/user/:id", controller.UpdateUser(grpcClient))
 	v1UserRouter.POST("/forget_pass", controller.ForgetPass)
 	v1UserRouter.POST("/reset_pass", controller.ResetPass)

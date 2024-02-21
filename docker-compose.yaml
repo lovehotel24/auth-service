@@ -2,17 +2,18 @@ version: '3'
 
 services:
 
-  postgres:
-    image: postgres:latest
-    container_name: postgres-auth
-    environment:
-      POSTGRES_DB: postgres
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - postgres-data:/var/lib/postgresql/data
+#  postgres:
+#    image: postgres:latest
+#    container_name: postgres-auth
+#    environment:
+#      POSTGRES_DB: postgres
+#      POSTGRES_USER: postgres
+#      POSTGRES_PASSWORD: postgres
+#      POSTGRES_PORT: 5433
+#    ports:
+#      - "5432:5432"
+#    volumes:
+#      - postgres-data:/var/lib/postgresql/data
 
   redis:
     image: "redis:7-alpine"
@@ -22,22 +23,22 @@ services:
     volumes:
       - ./tmp/redis_data:/var/lib/redis/data
 
-  auth-service:
-    build:
-      context: .
-      args:
-        - BUILD_REF=1.0
-      dockerfile: Dockerfile
-    container_name: auth-service
-    environment:
-      - AUTH_PG_HOST=postgres
-      - AUTH_REDIS_PASS=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
-      - AUTH_REDIS_HOST=redis
-    ports:
-      - "8080:8080"
-    depends_on:
-      - redis
-      - postgres
+#  auth-service:
+#    build:
+#      context: .
+#      args:
+#        - BUILD_REF=1.0
+#      dockerfile: Dockerfile
+#    container_name: auth-service
+#    environment:
+#      - AUTH_PG_HOST=postgres
+#      - AUTH_REDIS_PASS=eYVX7EwVmmxKPCDmwMtyKVge8oLd2t81
+#      - AUTH_REDIS_HOST=redis
+#    ports:
+#      - "8080:8080"
+#    depends_on:
+#      - redis
+#      - postgres
 
 
 volumes:

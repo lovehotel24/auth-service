@@ -3,6 +3,7 @@ package configs
 import (
 	"fmt"
 
+	"github.com/lovehotel24/booking-service/pkg/grpc/userpb"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 
@@ -24,7 +25,7 @@ type DBConfig struct {
 	UserPass   string
 }
 
-func Connect(conf *DBConfig) {
+func Connect(conf *DBConfig, grpcClient userpb.UserServiceClient) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=Asia/Bangkok", conf.Host, conf.User, conf.Pass, conf.DBName, conf.Port, conf.SSLMode)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
@@ -39,9 +40,9 @@ func Connect(conf *DBConfig) {
 	if err != nil {
 		panic(err)
 	}
-	admin := models.NewAdmin(conf.AdminPhone, conf.AdminPass)
+	admin := models.NewAdmin(conf.AdminPhone, conf.AdminPass, grpcClient)
 	db.Create(&admin)
-	tester := models.NewUser(conf.UserPhone, conf.UserPass)
+	tester := models.NewUser(conf.UserPhone, conf.UserPass, grpcClient)
 	db.Create(&tester)
 	DB = db
 }
