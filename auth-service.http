@@ -1,5 +1,5 @@
 ### login
-POST http://localhost:8080/v1/login
+POST http://localhost:8080/v1/user/login
 Content-Type: application/json
 
 {
@@ -8,7 +8,7 @@ Content-Type: application/json
 }
 
 ### get all users
-GET http://localhost:8080/v1/users
+GET http://localhost:8080/v1/user
 Accept: application/json
 Authorization: Bearer {{token}}
 
@@ -18,12 +18,12 @@ Accept: application/json
 Authorization: Bearer {{token}}
 
 ### get current user
-GET http://localhost:8080/v1/current_user
+GET http://localhost:8080/v1/user/current_user
 Accept: application/json
 Authorization: Bearer {{token}}
 
 ### register user
-POST http://localhost:8080/v1/register
+POST http://localhost:8080/v1/user/register
 Content-Type: application/json
 
 {
@@ -47,7 +47,7 @@ DELETE http://localhost:8080/v1/user/aa6590cc-d081-11ee-b45c-4a29f78ba46e
 Authorization: Bearer {{token}}
 
 ### forget pass
-POST http://localhost:8080/v1/forget_pass
+POST http://localhost:8080/v1/user/forget_pass
 Content-Type: application/json
 
 {
@@ -55,7 +55,7 @@ Content-Type: application/json
 }
 
 ### reset pass
-POST http://localhost:8080/v1/reset_pass
+POST http://localhost:8080/v1/user/reset_pass
 Content-Type: application/json
 
 {
@@ -65,7 +65,7 @@ Content-Type: application/json
 }
 
 ### logout
-GET http://localhost:8080/v1/logout
+GET http://localhost:8080/v1/user/logout
 Authorization: Bearer {{token}}
 
 ### /
@@ -73,3 +73,6 @@ GET http://localhost:8080
 
 ### access_token
 GET http://localhost:8080/oauth/validate_token?access_token=eyJhbGciOiJIUzUxMiIsImtpZCI6Imp3dCIsInR5cCI6IkpXVCJ9.eyJhdWQiOiIyMjIyMjIiLCJleHAiOjE3MDc1NjA0NzAsInN1YiI6IjQ5ZjJiNDhjLWM3ZWQtMTFlZS1hZWQyLTRhMjlmNzhiYTQ2ZiJ9.mxcJKdAscZ45rZhTQHEOBew-b8foAL1bnzZbAc0wCH4ikzScTiKEp5KbvgLR8wCRgrN63lOkF03ccmNwcrPolQ
+
+### token endpoint
+GET http://localhost:8080/oauth/token

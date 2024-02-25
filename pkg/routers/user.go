@@ -17,19 +17,19 @@ const (
 )
 
 func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore, client oauth2.Config, grpcClient userpb.UserServiceClient) {
-	v1UserRouter := router.Group("/v1")
-	v1UserRouter.Use(ValidateToken(srv))
-	v1UserRouter.GET("/users", controller.GetUsers(grpcClient))
-	v1UserRouter.GET("/user/:id", controller.GetUser(grpcClient))
-	v1UserRouter.GET("/current_user", controller.CurrentUser(grpcClient))
-	v1UserRouter.POST("/register", controller.CreateUser(grpcClient))
-	v1UserRouter.DELETE("/user/:id", controller.OnlyAdmin(grpcClient), controller.DeleteUser(grpcClient))
-	v1UserRouter.PUT("/user/:id", controller.UpdateUser(grpcClient))
-	v1UserRouter.POST("/forget_pass", controller.ForgetPass)
-	v1UserRouter.POST("/reset_pass", controller.ResetPass)
-	v1UserRouter.GET("/hello", controller.Hello)
-	v1UserRouter.GET("/logout", controller.Logout(ts))
-	v1UserRouter.POST("/login", controller.Login(client))
+	v1Route := router.Group("/v1")
+	userRouter := v1Route.Group("/user")
+	userRouter.Use(ValidateToken(srv))
+	userRouter.GET("/", controller.GetUsers(grpcClient))
+	userRouter.GET("/:id", controller.GetUser(grpcClient))
+	userRouter.GET("/current_user", controller.CurrentUser(grpcClient))
+	userRouter.POST("/register", controller.CreateUser(grpcClient))
+	userRouter.DELETE("/:id", controller.OnlyAdmin(grpcClient), controller.DeleteUser(grpcClient))
+	userRouter.PUT("/:id", controller.UpdateUser(grpcClient))
+	userRouter.POST("/forget_pass", controller.ForgetPass)
+	userRouter.POST("/reset_pass", controller.ResetPass)
+	userRouter.GET("/logout", controller.Logout(ts))
+	userRouter.POST("/login", controller.Login(client))
 }
 
 func ValidateToken(srv *server.Server) gin.HandlerFunc {
