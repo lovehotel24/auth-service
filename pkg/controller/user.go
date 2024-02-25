@@ -24,7 +24,7 @@ type User struct {
 	Name     string `json:"name"`
 	Phone    string `json:"phone"`
 	Role     string `json:"role"`
-	Password string `json:"password"`
+	Password string `json:"password,omitempty"`
 }
 
 func NewUserId() uuid.UUID {
@@ -86,7 +86,7 @@ func GetUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 			return
 		}
-		configs.DB.Where("id = ?").First(&user)
+		//configs.DB.Where("id = ?").First(&user)
 		c.JSON(http.StatusOK, &user)
 	}
 }

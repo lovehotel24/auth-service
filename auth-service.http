@@ -13,7 +13,7 @@ Accept: application/json
 Authorization: Bearer {{token}}
 
 ### get single user
-GET http://localhost:8080/v1/user/aa6590cc-d081-11ee-b45c-4a29f78ba46e
+GET http://localhost:8080/v1/user/a8682ebc-d241-11ee-bc1f-4a29f78ba46e
 Accept: application/json
 Authorization: Bearer {{token}}
 
@@ -30,7 +30,7 @@ Content-Type: application/json
   "name": "zinzin",
   "phone": "0634349645",
   "role": "USER",
-  "password": "asdf"
+  "password": "hell123"
 }
 
 ### update user
