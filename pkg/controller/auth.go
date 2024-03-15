@@ -9,6 +9,7 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/errors"
 	oredis "github.com/go-oauth2/redis/v4"
+	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
 	"golang.org/x/oauth2"
 	"gorm.io/gorm"
@@ -24,7 +25,7 @@ type userLogin struct {
 func PasswordAuthorizationHandler(db *gorm.DB) func(context.Context, string, string, string) (string, error) {
 	return func(ctx context.Context, clientID, phone, password string) (string, error) {
 		var user models.DBUser
-		if clientID != "222222" {
+		if clientID != viper.GetString("client-id") {
 			return "", errors.ErrUnauthorizedClient
 		}
 		err := db.Model(&user).Where("phone = ?", phone).First(&user).Error

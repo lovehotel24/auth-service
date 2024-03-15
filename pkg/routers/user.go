@@ -35,7 +35,7 @@ func UserRouter(router *gin.Engine, srv *server.Server, ts *oredis.TokenStore, c
 func ValidateToken(srv *server.Server) gin.HandlerFunc {
 	return func(c *gin.Context) {
 
-		if c.FullPath() == "/v1/login" || c.FullPath() == "/v1/register" || c.FullPath() == "/v1/forget_pass" || c.FullPath() == "/v1/reset_pass" {
+		if c.FullPath() == "/v1/user/login" || c.FullPath() == "/v1/user/register" || c.FullPath() == "/v1/user/forget_pass" || c.FullPath() == "/v1/user/reset_pass" {
 			c.Next()
 			return
 		}
