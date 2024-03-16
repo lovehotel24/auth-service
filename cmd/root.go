@@ -2,21 +2,16 @@ package cmd
 
 import (
 	"fmt"
-	"log"
 	"os"
 	"strings"
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/models"
 	"github.com/go-oauth2/oauth2/v4/store"
+	"github.com/sirupsen/logrus"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 	"golang.org/x/oauth2"
-	"google.golang.org/grpc/credentials/insecure"
-
-	"google.golang.org/grpc"
-
-	"github.com/lovehotel24/booking-service/pkg/grpc/userpb"
 
 	"github.com/lovehotel24/auth-service/pkg/configs"
 	"github.com/lovehotel24/auth-service/pkg/controller"
@@ -55,10 +50,10 @@ func init() {
 	rootCmd.Flags().String("redis-user", "default", "username to access redis server")
 	rootCmd.Flags().Int("redis-db", 15, "redis database name")
 	rootCmd.Flags().String("redis-pass", "", "password for redis server")
-	rootCmd.Flags().String("adm-ph", "0635248740", "initialize admin phone")
-	rootCmd.Flags().String("adm-pass", "hell123", "initialize admin password")
-	rootCmd.Flags().String("usr-ph", "0635248741", "initialize user phone")
-	rootCmd.Flags().String("usr-pass", "hell123", "initialize user password")
+	rootCmd.Flags().String("adm-ph", "0612345678", "initialize admin phone")
+	rootCmd.Flags().String("adm-pass", "topSecret", "initialize admin password")
+	rootCmd.Flags().String("usr-ph", "0601234567", "initialize user phone")
+	rootCmd.Flags().String("usr-pass", "lowSecret", "initialize user password")
 	rootCmd.Flags().String("client-id", "222222", "Oauth2 client id")
 	rootCmd.Flags().String("client-secret", "22222222", "Oauth2 client secret")
 	rootCmd.Flags().String("port", "8080", "auth service port")
@@ -90,18 +85,16 @@ func init() {
 }
 
 func runCommand(cmd *cobra.Command, args []string) {
-	dbConf := &configs.DBConfig{
-		Host:       viper.GetString("pg-host"),
-		Port:       viper.GetString("pg-port"),
-		User:       viper.GetString("pg-user"),
-		Pass:       viper.GetString("pg-pass"),
-		DBName:     viper.GetString("pg-db"),
-		SSLMode:    viper.GetString("pg-ssl"),
-		AdminPhone: viper.GetString("adm-ph"),
-		AdminPass:  viper.GetString("adm-pass"),
-		UserPhone:  viper.GetString("usr-ph"),
-		UserPass:   viper.GetString("usr-pass"),
-	}
+	dbConf := configs.NewDBConfig().
+		WithHost(viper.GetString("pg-host")).
+		WithPort(viper.GetString("pg-port")).
+		WithUser(viper.GetString("pg-user")).
+		WithPass(viper.GetString("pg-pass")).
+		WithName(viper.GetString("pg-db")).
+		WithSecure(viper.GetBool("pg-ssl"))
+
+	defUser := configs.NewDefaultUser().
+		WithDefaultAdminPhone(viper.GetString("adm-ph"))
 
 	redisConf := &configs.RedisConfig{
 		Addr:   fmt.Sprintf("%s:%s", viper.GetString("redis-host"), viper.GetString("redis-port")),
@@ -129,17 +122,42 @@ func runCommand(cmd *cobra.Command, args []string) {
 		Secret: viper.GetString("client-secret"),
 		Domain: authServerURL,
 	})
-	gConn, err := grpc.Dial(viper.GetString("grpc-host"), grpc.WithTransportCredentials(insecure.NewCredentials()))
+
+	var log = logrus.New()
+	log.SetFormatter(&logrus.JSONFormatter{})
+	log.SetOutput(os.Stdout)
+	log.SetReportCaller(true)
+	log.SetLevel(logrus.InfoLevel)
+
+	db, err := configs.NewDB(dbConf)
 	if err != nil {
-		panic(err)
+		log.WithError(err).Error("failed to connect db")
+		os.Exit(1)
 	}
-	grpcUserClient := userpb.NewUserServiceClient(gConn)
+
+	err = configs.Migrate(db)
+	if err != nil {
+		log.WithError(err).Error("failed to migrate db schema")
+	}
+
+	userClient, err := configs.NewGrpcUserService(viper.GetString("grpc-host"))
+	if err != nil {
+		log.WithError(err).Error("failed to connect GRPC user service")
+		os.Exit(1)
+	}
+
+	err = configs.Seed(db, defUser, userClient)
+	if err != nil {
+		log.WithError(err).Error("failed to seed default user")
+	}
+
 	router := gin.New()
-	configs.Connect(dbConf, grpcUserClient)
+
 	tokenStore := configs.NewTokenStore(redisConf)
-	oauthSvr := controller.NewOauth2(configs.DB, tokenStore, clientStore)
+	oauthSvr := controller.NewOauth2(db, tokenStore, clientStore)
+	api := controller.NewApp(db, log, userClient, config, tokenStore, oauthSvr)
 	router.Use(gin.Logger())
-	routers.UserRouter(router, oauthSvr, tokenStore, config, grpcUserClient)
+	routers.UserRouter(router, api)
 	routers.OauthRouter(router, oauthSvr)
 	if err := router.Run(fmt.Sprintf(":%s", viper.GetString("port"))); err != nil {
 		log.Fatalln(err)
