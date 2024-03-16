@@ -13,7 +13,7 @@ Accept: application/json
 Authorization: Bearer {{token}}
 
 ### get single user
-GET http://localhost:8080/v1/user/a8682ebc-d241-11ee-bc1f-4a29f78ba46e
+GET http://localhost:8080/v1/user/857e27ae-e37a-11ee-8e67-4a29f78ba46f
 Accept: application/json
 Authorization: Bearer {{token}}
 
@@ -34,12 +34,12 @@ Content-Type: application/json
 }
 
 ### update user
-PUT http://localhost:8080/v1/user/aa58390e-d081-11ee-b45c-4a29f78ba46e
+PUT http://localhost:8080/v1/user/2606451c-e37b-11ee-be5c-4a29f78ba46f
 Content-Type: application/json
 Authorization: Bearer {{token}}
 
 {
-  "name": "aabbcc"
+  "name": "eerr"
 }
 
 ### delete user
