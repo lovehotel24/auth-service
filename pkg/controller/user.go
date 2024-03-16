@@ -35,15 +35,15 @@ func NewUserId() uuid.UUID {
 	return userId
 }
 
-func getDBUserById(userId interface{}) models.DBUser {
+func (a API) getDBUserById(userId interface{}) models.DBUser {
 	var user models.DBUser
-	configs.DB.Where("id = ?", userId).First(&user)
+	a.DB.Where("id = ?", userId).First(&user)
 	return user
 }
 
-func getDBUserByPhone(phone string) models.DBUser {
+func (a API) getDBUserByPhone(phone string) models.DBUser {
 	var user models.DBUser
-	configs.DB.Where("phone = ?", phone).First(&user)
+	a.DB.Where("phone = ?", phone).First(&user)
 	return user
 }
 
@@ -62,14 +62,14 @@ func getBookUserById(userId string, grpcClient userpb.UserServiceClient) (User, 
 	return user, true
 }
 
-func CurrentUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+func (a API) CurrentUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId, ok := c.Get(userKey)
 		if !ok {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to current user"})
 			return
 		}
-		user, done := getBookUserById(userId.(string), grpcClient)
+		user, done := getBookUserById(userId.(string), a.Grpc)
 		if !done {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get current user"})
 			return
@@ -78,10 +78,10 @@ func CurrentUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 	}
 }
 
-func GetUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+func (a API) GetUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId := c.Param("id")
-		user, done := getBookUserById(userId, grpcClient)
+		user, done := getBookUserById(userId, a.Grpc)
 		if !done {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to get user"})
 			return
@@ -91,7 +91,7 @@ func GetUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 	}
 }
 
-func GetUsers(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+func (a API) GetUsers() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		//var users []User
 		//blank := &empty.Empty{}
@@ -117,7 +117,7 @@ func GetUsers(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 			Offset: int32(offset),
 		}
 
-		allUsers, err := grpcClient.GetAllUsers(context.Background(), req)
+		allUsers, err := a.Grpc.GetAllUsers(context.Background(), req)
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch users"})
 			return
@@ -138,7 +138,7 @@ func GetUsers(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 	}
 }
 
-func CreateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+func (a API) CreateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user User
 		var dbUser models.DBUser
@@ -159,7 +159,7 @@ func CreateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 		}
 		user.Password = ""
 
-		_, err := grpcClient.CreateUser(context.Background(), &userpb.CreateUserRequest{User: &userpb.User{
+		_, err := a.Grpc.CreateUser(context.Background(), &userpb.CreateUserRequest{User: &userpb.User{
 			Id:    &userpb.UUID{Value: userId.String()},
 			Name:  user.Name,
 			Phone: user.Phone,
@@ -169,12 +169,12 @@ func CreateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to create user"})
 			return
 		}
-		configs.DB.Create(&dbUser)
+		a.DB.Create(&dbUser)
 		c.JSON(http.StatusOK, &user)
 	}
 }
 
-func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+func (a API) UpdateUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var updateUser User
 		var dbUpdateUser models.DBUser
@@ -183,7 +183,7 @@ func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to save session"})
 			return
 		}
-		user := getDBUserById(userId)
+		user := a.getDBUserById(userId)
 		if err := c.BindJSON(&updateUser); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
@@ -222,7 +222,7 @@ func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 			updateBookUser.Role = updateUser.Role
 		}
 
-		_, err := grpcClient.UpdateUser(context.Background(), &userpb.UpdateUserRequest{User: updateBookUser})
+		_, err := a.Grpc.UpdateUser(context.Background(), &userpb.UpdateUserRequest{User: updateBookUser})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to update user"})
 			return
@@ -230,7 +230,7 @@ func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 
 		updateUser.Password = ""
 
-		if err := configs.DB.Save(dbUpdateUser).Error; err != nil {
+		if err := a.DB.Save(dbUpdateUser).Error; err != nil {
 			fmt.Println(err)
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error})
 			return
@@ -239,15 +239,15 @@ func UpdateUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 	}
 }
 
-func DeleteUser(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+func (a API) DeleteUser() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user models.DBUser
-		_, err := grpcClient.DeleteUser(context.Background(), &userpb.DeleteUserRequest{Id: &userpb.UUID{Value: c.Param("id")}})
+		_, err := a.Grpc.DeleteUser(context.Background(), &userpb.DeleteUserRequest{Id: &userpb.UUID{Value: c.Param("id")}})
 		if err != nil {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to delete user"})
 			return
 		}
-		configs.DB.Where("id = ?", c.Param("id")).Delete(&user)
+		a.DB.Where("id = ?", c.Param("id")).Delete(&user)
 		c.JSON(http.StatusOK, &user)
 	}
 }
@@ -256,18 +256,18 @@ type forgetPass struct {
 	Phone string `json:"phone"`
 }
 
-func ForgetPass(c *gin.Context) {
+func (a API) ForgetPass(c *gin.Context) {
 	var forget forgetPass
 	if err := c.BindJSON(&forget); err != nil {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	user := getDBUserByPhone(forget.Phone)
+	user := a.getDBUserByPhone(forget.Phone)
 	newReset := models.ResetPass{
 		VerifyCode: configs.EncodeToString(6),
 		UserId:     user.Id,
 	}
-	configs.DB.Create(&newReset)
+	a.DB.Create(&newReset)
 	c.JSON(http.StatusOK, &newReset)
 }
 
@@ -277,7 +277,7 @@ type resetPass struct {
 	ConfirmPassword string `json:"confirm_password"`
 }
 
-func ResetPass(c *gin.Context) {
+func (a API) ResetPass(c *gin.Context) {
 	var reset resetPass
 	var forget models.ResetPass
 	var user models.DBUser
@@ -290,8 +290,8 @@ func ResetPass(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "password and confirm password must be identical."})
 		return
 	}
-	configs.DB.Model(&models.ResetPass{}).Where("verify_code = ?", reset.Code).First(&forget)
-	configs.DB.Model(&models.DBUser{}).Where("id = ?", forget.UserId).First(&user)
+	a.DB.Model(&models.ResetPass{}).Where("verify_code = ?", reset.Code).First(&forget)
+	a.DB.Model(&models.DBUser{}).Where("id = ?", forget.UserId).First(&user)
 
 	if hash, ok := generateHashPasswd(c, reset.Password); ok {
 		user.PasswordHash = hash
@@ -299,8 +299,8 @@ func ResetPass(c *gin.Context) {
 		return
 	}
 
-	configs.DB.Save(&user)
-	configs.DB.Model(&models.ResetPass{}).Delete(&forget)
+	a.DB.Save(&user)
+	a.DB.Model(&models.ResetPass{}).Delete(&forget)
 	c.JSON(http.StatusOK, &user)
 }
 
@@ -317,7 +317,7 @@ func generateHashPasswd(c *gin.Context, pass string) ([]byte, bool) {
 	return hash, true
 }
 
-func OnlyAdmin(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
+func (a API) OnlyAdmin() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		userId, ok := c.Get(userKey)
 		if !ok {
@@ -325,7 +325,7 @@ func OnlyAdmin(grpcClient userpb.UserServiceClient) gin.HandlerFunc {
 			c.Abort()
 			return
 		}
-		user, done := getBookUserById(userId.(string), grpcClient)
+		user, done := getBookUserById(userId.(string), a.Grpc)
 		if !done {
 			c.JSON(http.StatusInternalServerError, gin.H{"error": "Failed to fetch user info"})
 			return

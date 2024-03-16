@@ -8,10 +8,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/go-oauth2/oauth2/v4/errors"
-	oredis "github.com/go-oauth2/redis/v4"
-	"github.com/spf13/viper"
 	"golang.org/x/crypto/bcrypt"
-	"golang.org/x/oauth2"
 	"gorm.io/gorm"
 
 	"github.com/lovehotel24/auth-service/pkg/models"
@@ -25,9 +22,9 @@ type userLogin struct {
 func PasswordAuthorizationHandler(db *gorm.DB) func(context.Context, string, string, string) (string, error) {
 	return func(ctx context.Context, clientID, phone, password string) (string, error) {
 		var user models.DBUser
-		if clientID != viper.GetString("client-id") {
-			return "", errors.ErrUnauthorizedClient
-		}
+		//if clientID != viper.GetString("client-id") {
+		//	return "", errors.ErrUnauthorizedClient
+		//}
 		err := db.Model(&user).Where("phone = ?", phone).First(&user).Error
 		if err != nil {
 			return "", errors.ErrUnauthorizedClient
@@ -40,14 +37,14 @@ func PasswordAuthorizationHandler(db *gorm.DB) func(context.Context, string, str
 	}
 }
 
-func Login(config oauth2.Config) gin.HandlerFunc {
+func (a API) Login() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		var user userLogin
 		if err := c.BindJSON(&user); err != nil {
 			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 			return
 		}
-		token, err := config.PasswordCredentialsToken(context.Background(), user.Phone, user.Password)
+		token, err := a.OauthConfig.PasswordCredentialsToken(context.Background(), user.Phone, user.Password)
 		if err != nil {
 			c.JSON(http.StatusUnauthorized, gin.H{"error": err.Error()})
 			return
@@ -56,14 +53,14 @@ func Login(config oauth2.Config) gin.HandlerFunc {
 	}
 }
 
-func Logout(ts *oredis.TokenStore) gin.HandlerFunc {
+func (a API) Logout() gin.HandlerFunc {
 	return func(c *gin.Context) {
 		token, ok := BearerAuth(c.Request)
 		if !ok {
 			c.Redirect(http.StatusPermanentRedirect, "/")
 			return
 		}
-		err := ts.RemoveByAccess(context.Background(), token)
+		err := a.TS.RemoveByAccess(context.Background(), token)
 		if err != nil {
 			fmt.Println(err)
 		}

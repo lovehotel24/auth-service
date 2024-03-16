@@ -17,15 +17,6 @@ type DBUser struct {
 	PasswordHash []byte
 }
 
-//
-//func (user *DBUser) BeforeCreate(tx *gorm.DB) (err error) {
-//	user.Id, err = uuid.NewUUID()
-//	if err != nil {
-//		return err
-//	}
-//	return nil
-//}
-
 type ResetPass struct {
 	gorm.Model
 	VerifyCode string
@@ -60,7 +51,7 @@ func NewUser(phone, pass string, grpcClient userpb.UserServiceClient) *DBUser {
 	userId := NewUserId()
 	_, err := grpcClient.CreateUser(context.Background(), &userpb.CreateUserRequest{User: &userpb.User{
 		Id:    &userpb.UUID{Value: userId.String()},
-		Name:  "test",
+		Name:  "tester",
 		Phone: phone,
 		Role:  "USER",
 	}})
