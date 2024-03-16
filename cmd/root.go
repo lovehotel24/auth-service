@@ -50,10 +50,10 @@ func init() {
 	rootCmd.Flags().String("redis-user", "default", "username to access redis server")
 	rootCmd.Flags().Int("redis-db", 15, "redis database name")
 	rootCmd.Flags().String("redis-pass", "", "password for redis server")
-	rootCmd.Flags().String("adm-ph", "0635248740", "initialize admin phone")
-	rootCmd.Flags().String("adm-pass", "hell123", "initialize admin password")
-	rootCmd.Flags().String("usr-ph", "0635248741", "initialize user phone")
-	rootCmd.Flags().String("usr-pass", "hell123", "initialize user password")
+	rootCmd.Flags().String("adm-ph", "0612345678", "initialize admin phone")
+	rootCmd.Flags().String("adm-pass", "topSecret", "initialize admin password")
+	rootCmd.Flags().String("usr-ph", "0601234567", "initialize user phone")
+	rootCmd.Flags().String("usr-pass", "lowSecret", "initialize user password")
 	rootCmd.Flags().String("client-id", "222222", "Oauth2 client id")
 	rootCmd.Flags().String("client-secret", "22222222", "Oauth2 client secret")
 	rootCmd.Flags().String("port", "8080", "auth service port")
@@ -132,6 +132,7 @@ func runCommand(cmd *cobra.Command, args []string) {
 	db, err := configs.NewDB(dbConf)
 	if err != nil {
 		log.WithError(err).Error("failed to connect db")
+		os.Exit(1)
 	}
 
 	err = configs.Migrate(db)
@@ -142,6 +143,7 @@ func runCommand(cmd *cobra.Command, args []string) {
 	userClient, err := configs.NewGrpcUserService(viper.GetString("grpc-host"))
 	if err != nil {
 		log.WithError(err).Error("failed to connect GRPC user service")
+		os.Exit(1)
 	}
 
 	err = configs.Seed(db, defUser, userClient)

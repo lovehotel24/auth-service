@@ -61,7 +61,7 @@ func NewDB(conf DBConfig) (*gorm.DB, error) {
 	dsn := fmt.Sprintf("host=%s user=%s password=%s dbname=%s port=%s sslmode=%s TimeZone=%s", conf.host, conf.user, conf.pass, conf.name, conf.port, conf.sslMode, conf.timeZone)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
 	if err != nil {
-		panic(err)
+		return nil, err
 	}
 	db.Exec("CREATE EXTENSION IF NOT EXISTS \"uuid-ossp\"")
 	return db, nil
